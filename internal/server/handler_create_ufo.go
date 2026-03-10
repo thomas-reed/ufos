@@ -20,13 +20,30 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ufoID := uuid.New().String()
+
 	prefixHashStr := r.Header.Get("X-UFO-Prefix")
-	size, _ := strconv.ParseInt(r.Header.Get("X-UFO-Size"), 10, 64)
+	if prefixHashStr == "" {
+			respondWithError(w, http.StatusBadRequest, "missing object prefix", nil)
+			return
+	}
+	
+	sizeStr := r.Header.Get("X-UFO-Size")
+	if sizeStr == "" {
+			respondWithError(w, http.StatusBadRequest, "missing object size", nil)
+			return
+	}
+	size, err := strconv.ParseInt(sizeStr, 10, 64)
+	if err != nil {
+			respondWithError(w, http.StatusBadRequest, "invalid size format", err)
+			return
+	}
+
 	metadata, err := base64.StdEncoding.DecodeString(r.Header.Get("X-UFO-Metadata"))
 	if err != nil {
 			respondWithError(w, http.StatusBadRequest, "invalid metadata encoding", err)
 			return
 	}
+	
 	status := objects.StatusPending
 	if size == 0 {
 		status = objects.StatusActive
