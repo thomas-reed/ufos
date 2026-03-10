@@ -10,12 +10,13 @@ import (
 )
 
 type Object struct {
-	ID         string    `json:"id"`
-	ParentHash string    `json:"parent_hash"`
-	IsFolder   bool      `json:"is_folder"`
-	Metadata   []byte    `json:"metadata"`
-	SizeBytes  int64     `json:"size_bytes"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID           string    `json:"id"`
+	PrefixHash   string    `json:"prefix_hash"`
+	SizeBytes    int64     `json:"size_bytes"`
+	UploadStatus string    `json:"upload_status"`
+	Metadata     []byte    `json:"metadata"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type ObjectTag struct {

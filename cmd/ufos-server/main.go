@@ -7,11 +7,15 @@ import (
 )
 
 func main() {
-	svr, err := server.NewServer()
+	s, err := server.NewServer()
+	for id := range s.Registry {
+		defer s.Registry[id].DBConn.Close()
+	}
+
 	if err != nil {
 		log.Fatalf("Error initializing server: %v", err)
 	}
 
-	log.Printf("Server listening on port: %s\n", svr.Port)
-	log.Fatal(svr.HTTPServer.ListenAndServe())
+	log.Printf("Server listening on port: %s\n", s.Port)
+	log.Fatal(s.HTTPServer.ListenAndServe())
 }

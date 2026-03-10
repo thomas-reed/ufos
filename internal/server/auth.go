@@ -1,13 +1,13 @@
 package server
 
 import (
+	"context"
 	"database/sql"
 	"encoding/base64"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
-	"context"
 
 	"github.com/thomas-reed/ufos/internal/crypto"
 )
@@ -20,6 +20,9 @@ func (s *Server) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		personaID := r.Header.Get("X-UFO-Persona")
 		timestampStr := r.Header.Get("X-UFO-Timestamp")
+		sizeStr := r.Header.Get("X-UFO-Size")
+		prefixHashStr := r.Header.Get("X-UFO-Prefix")
+		metadataStr := r.Header.Get("X-UFO-Metadata")
 		sigBase64 := r.Header.Get("X-UFO-Signature")
 
 		timestampInt, err := strconv.ParseInt(timestampStr, 10, 64)
@@ -39,14 +42,22 @@ func (s *Server) Authenticate(next http.Handler) http.Handler {
 			return
 		}
 
-
 		persona, ok := s.GetPersona(personaID)
 		if !ok {
 			respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
 			return
 		}
 
-		payload := fmt.Sprintf("%s|%s|%s|%s", r.Method, r.URL.Path, personaID, timestampStr)
+		payload := fmt.Sprintf(
+			"%s|%s|%s|%s|%s|%s|%s",
+			r.Method,
+			r.URL.Path,
+			personaID,
+			timestampStr,
+			sizeStr,
+			prefixHashStr,
+			metadataStr,
+		)
 
 		sig, _ := base64.StdEncoding.DecodeString(sigBase64)
 

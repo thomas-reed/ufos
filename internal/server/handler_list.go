@@ -4,6 +4,6 @@ import (
 	"net/http"
 )
 
-func (s *Server) listHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleList(w http.ResponseWriter, r *http.Request) {
 
 }

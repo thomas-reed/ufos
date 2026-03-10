@@ -7,31 +7,44 @@ package database
 
 import (
 	"context"
-	"time"
 )
 
 const createObject = `-- name: CreateObject :exec
-INSERT INTO objects (id, parent_hash, is_folder, metadata, size_bytes, created_at)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO objects (
+  id,
+  prefix_hash,
+  size_bytes,
+  upload_status,
+  metadata,
+  created_at,
+  updated_at
+)
+VALUES (
+  ?,
+  ?,
+  ?,
+  ?,
+  ?,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+)
 `
 
 type CreateObjectParams struct {
-	ID         string    `json:"id"`
-	ParentHash string    `json:"parent_hash"`
-	IsFolder   bool      `json:"is_folder"`
-	Metadata   []byte    `json:"metadata"`
-	SizeBytes  int64     `json:"size_bytes"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID           string `json:"id"`
+	PrefixHash   string `json:"prefix_hash"`
+	SizeBytes    int64  `json:"size_bytes"`
+	UploadStatus string `json:"upload_status"`
+	Metadata     []byte `json:"metadata"`
 }
 
 func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) error {
 	_, err := q.db.ExecContext(ctx, createObject,
 		arg.ID,
-		arg.ParentHash,
-		arg.IsFolder,
-		arg.Metadata,
+		arg.PrefixHash,
 		arg.SizeBytes,
-		arg.CreatedAt,
+		arg.UploadStatus,
+		arg.Metadata,
 	)
 	return err
 }
@@ -46,7 +59,7 @@ func (q *Queries) DeleteObject(ctx context.Context, id string) error {
 }
 
 const getObject = `-- name: GetObject :one
-SELECT id, parent_hash, is_folder, metadata, size_bytes, created_at FROM objects WHERE id = ?
+SELECT id, prefix_hash, size_bytes, upload_status, metadata, created_at, updated_at FROM objects WHERE id = ?
 `
 
 func (q *Queries) GetObject(ctx context.Context, id string) (Object, error) {
@@ -54,21 +67,25 @@ func (q *Queries) GetObject(ctx context.Context, id string) (Object, error) {
 	var i Object
 	err := row.Scan(
 		&i.ID,
-		&i.ParentHash,
-		&i.IsFolder,
-		&i.Metadata,
+		&i.PrefixHash,
 		&i.SizeBytes,
+		&i.UploadStatus,
+		&i.Metadata,
 		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
-const listObjectsByParent = `-- name: ListObjectsByParent :many
-SELECT id, parent_hash, is_folder, metadata, size_bytes, created_at FROM objects WHERE parent_hash = ?
+const getObjectsByTag = `-- name: GetObjectsByTag :many
+SELECT objects.id, objects.prefix_hash, objects.size_bytes, objects.upload_status, objects.metadata, objects.created_at, objects.updated_at
+FROM objects
+INNER JOIN object_tags ON object_tags.object_id = objects.id
+WHERE object_tags.tag_hash = ?
 `
 
-func (q *Queries) ListObjectsByParent(ctx context.Context, parentHash string) ([]Object, error) {
-	rows, err := q.db.QueryContext(ctx, listObjectsByParent, parentHash)
+func (q *Queries) GetObjectsByTag(ctx context.Context, tagHash string) ([]Object, error) {
+	rows, err := q.db.QueryContext(ctx, getObjectsByTag, tagHash)
 	if err != nil {
 		return nil, err
 	}
@@ -78,11 +95,12 @@ func (q *Queries) ListObjectsByParent(ctx context.Context, parentHash string) ([
 		var i Object
 		if err := rows.Scan(
 			&i.ID,
-			&i.ParentHash,
-			&i.IsFolder,
-			&i.Metadata,
+			&i.PrefixHash,
 			&i.SizeBytes,
+			&i.UploadStatus,
+			&i.Metadata,
 			&i.CreatedAt,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -95,4 +113,69 @@ func (q *Queries) ListObjectsByParent(ctx context.Context, parentHash string) ([
 		return nil, err
 	}
 	return items, nil
+}
+
+const listObjectsByParent = `-- name: ListObjectsByParent :many
+SELECT id, prefix_hash, size_bytes, upload_status, metadata, created_at, updated_at FROM objects WHERE prefix_hash = ?
+`
+
+func (q *Queries) ListObjectsByParent(ctx context.Context, prefixHash string) ([]Object, error) {
+	rows, err := q.db.QueryContext(ctx, listObjectsByParent, prefixHash)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Object
+	for rows.Next() {
+		var i Object
+		if err := rows.Scan(
+			&i.ID,
+			&i.PrefixHash,
+			&i.SizeBytes,
+			&i.UploadStatus,
+			&i.Metadata,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const updateObject = `-- name: UpdateObject :exec
+UPDATE objects
+SET
+  prefix_hash = ?,
+  size_bytes = ?,
+  upload_status = ?,
+  metadata = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+`
+
+type UpdateObjectParams struct {
+	PrefixHash   string `json:"prefix_hash"`
+	SizeBytes    int64  `json:"size_bytes"`
+	UploadStatus string `json:"upload_status"`
+	Metadata     []byte `json:"metadata"`
+	ID           string `json:"id"`
+}
+
+func (q *Queries) UpdateObject(ctx context.Context, arg UpdateObjectParams) error {
+	_, err := q.db.ExecContext(ctx, updateObject,
+		arg.PrefixHash,
+		arg.SizeBytes,
+		arg.UploadStatus,
+		arg.Metadata,
+		arg.ID,
+	)
+	return err
 }

@@ -2,12 +2,13 @@
 
 -- The objects table tracks the encrypted files stored on the server.
 CREATE TABLE objects (
-    id TEXT PRIMARY KEY,                   -- Unique UUID for the file
-    parent_hash TEXT NOT NULL,             -- Hashed prefix for folder-like navigation
-    is_folder BOOLEAN NOT NULL DEFAULT 0,  -- Folder object flag
-    metadata BLOB,                         -- Encrypted JSON (filename, type, etc.)
-    size_bytes INTEGER NOT NULL,
-    created_at DATETIME NOT NULL
+    id TEXT PRIMARY KEY,            -- Unique UUID for the file
+    prefix_hash TEXT NOT NULL,      -- Hashed prefix for folder-like navigation
+    size_bytes INTEGER NOT NULL,    -- size of file on disk - "folder" will be 0
+    upload_status TEXT NOT NULL,    -- pending, uploading, active, failed
+    metadata BLOB,                  -- Encrypted JSON (filename, type, etc.)
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
 ) WITHOUT ROWID;
 
 -- The object_tags table allows for searching by many hashed keywords.

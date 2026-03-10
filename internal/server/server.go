@@ -19,49 +19,49 @@ type Server struct {
 	newPersonaToken  string
 	mu               sync.RWMutex
 	registryFilepath string
-	registry         map[string]*Persona
+	Registry         map[string]*Persona
 }
 
 func NewServer() (*Server, error) {
-	server := Server{}
+	s := Server{}
 
 	err := godotenv.Load()
 	if err != nil {
 		return nil, fmt.Errorf("Could not load env file: %w", err)
 	}
-	server.Port = os.Getenv("PORT")
-	if server.Port == "" {
+	s.Port = os.Getenv("PORT")
+	if s.Port == "" {
 		return nil, fmt.Errorf("Port not found")
 	}
-	server.registryFilepath = os.Getenv("REGISTRY_FILEPATH")
-	if server.registryFilepath == "" {
+	s.registryFilepath = os.Getenv("REGISTRY_FILEPATH")
+	if s.registryFilepath == "" {
 		return nil, fmt.Errorf("Registry filepath not found")
 	}
-	server.newPersonaToken = os.Getenv("NEW_PERSONA_TOKEN")
+	s.newPersonaToken = os.Getenv("NEW_PERSONA_TOKEN")
 
-	err = server.LoadRegistry(server.registryFilepath)
+	err = s.LoadRegistry(s.registryFilepath)
 
 	if err := goose.SetDialect("sqlite3"); err != nil {
 		return nil, fmt.Errorf("Error running goose SetDialect: %w", err)
 	}
 
-	for _, persona := range server.registry {
-		dbConn, err := sql.Open("sqlite3", persona.DbPath)
+	for _, persona := range s.Registry {
+		dbConn, err := sql.Open("sqlite3", persona.DBPath)
 		if err != nil {
-			return nil, fmt.Errorf("Could not open database connection: %w", err)
+			return nil, fmt.Errorf("Could not open db for %s: %w", persona.ID, err)
 		}
 
-		if err := goose.Up(persona.dbConn, "sql/schema"); err != nil {
-			return nil, fmt.Errorf("Error running goose Up for %s: %w", persona.ID, err)
+		if err := goose.Up(dbConn, "sql/schema"); err != nil {
+			return nil, fmt.Errorf("Migration failed for %s: %w", persona.ID, err)
 		}
-		persona.dbConn = dbConn
+		persona.DBConn = dbConn
 		persona.db = database.New(dbConn)
 	}
 
-	server.HTTPServer = &http.Server{
-		Addr:    ":" + server.Port,
-		Handler: server.RouteSetup(),
+	s.HTTPServer = &http.Server{
+		Addr:    ":" + s.Port,
+		Handler: s.Router(),
 	}
 
-	return &server, nil
+	return &s, nil
 }

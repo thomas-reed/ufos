@@ -19,7 +19,7 @@ type Client struct {
 
 // NewClient initializes a new UFO client with standard defaults.
 func NewClient(password []byte, personaName string) (*Client, error) {
-	client := Client{
+	c := Client{
 		HTTPClient: &http.Client{
 			Timeout: clientTimeout,
 		},
@@ -27,9 +27,9 @@ func NewClient(password []byte, personaName string) (*Client, error) {
 			Name: personaName,
 		},
 	}
-	err := client.getVaultFilepath()
+	err := c.getVaultFilepath()
 	if err != nil {
 		return nil, err
 	}
-	return &client, nil
+	return &c, nil
 }

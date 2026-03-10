@@ -4,6 +4,6 @@ import (
 	"net/http"
 )
 
-func (s *Server) downloadHandler(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleDownload(w http.ResponseWriter, r *http.Request) {
 
 }

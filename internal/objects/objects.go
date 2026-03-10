@@ -5,6 +5,15 @@ import (
 	"strings"
 )
 
+type ObjectStatus string
+
+const (
+	StatusPending   ObjectStatus = "pending"   // Row created, waiting for file
+	StatusUploading ObjectStatus = "uploading" // Server is currently io.Copy-ing
+	StatusActive    ObjectStatus = "active"    // File is safe on disk
+	StatusFailed    ObjectStatus = "failed"    // Upload was interrupted or error occurred
+)
+
 type ObjectMetadata struct {
 	Name        string        `json:"name"`         // "original_filename.ext"
 	ContentType string        `json:"content_type"` // "image/jpeg"
@@ -72,6 +81,6 @@ func (m *ObjectMetadata) AddTags(tags ...string) {
 }
 
 func cleanString(s string) string {
-	regex := regexp.MustCompile(`[^a-zA-Z]+`)
+	regex := regexp.MustCompile(`[^\p{L}\p{N}]+`)
 	return regex.ReplaceAllString(s, " ")
 }
