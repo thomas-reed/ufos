@@ -1,12 +1,15 @@
 package server
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/thomas-reed/ufos/internal/crypto"
@@ -20,9 +23,6 @@ func (s *Server) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		personaID := r.Header.Get("X-UFO-Persona")
 		timestampStr := r.Header.Get("X-UFO-Timestamp")
-		sizeStr := r.Header.Get("X-UFO-Size")
-		prefixHashStr := r.Header.Get("X-UFO-Prefix")
-		metadataStr := r.Header.Get("X-UFO-Metadata")
 		sigBase64 := r.Header.Get("X-UFO-Signature")
 
 		timestampInt, err := strconv.ParseInt(timestampStr, 10, 64)
@@ -48,15 +48,27 @@ func (s *Server) Authenticate(next http.Handler) http.Handler {
 			return
 		}
 
+		bodyHash := ""
+		// If the request is NOT "PUT /api/objects/" - AKA, NOT HandleUploadObject large stream
+		if !(r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/api/objects/")) {
+			body, err := io.ReadAll(r.Body)
+			if err != nil {
+				respondWithError(w, http.StatusInternalServerError, "could not read body", err)
+				return
+			}
+			r.Body.Close()
+			bodyHash = crypto.HashAndBase64(body)
+			// Re-stuff the body so HandleCreateUFO can decode the JSON
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
+		}
+
 		payload := fmt.Sprintf(
-			"%s|%s|%s|%s|%s|%s|%s",
+			"%s|%s|%s|%s|%s",
 			r.Method,
 			r.URL.Path,
 			personaID,
 			timestampStr,
-			sizeStr,
-			prefixHashStr,
-			metadataStr,
+			bodyHash,
 		)
 
 		sig, _ := base64.StdEncoding.DecodeString(sigBase64)

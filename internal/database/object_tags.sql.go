@@ -9,12 +9,13 @@ import (
 	"context"
 )
 
-const addObjectTag = `-- name: AddObjectTag :exec
+const addObjectTag = `-- name: AddObjectTag :one
 INSERT INTO object_tags (object_id, tag_hash)
 VALUES (
   ?,
   ?
 )
+RETURNING object_id
 `
 
 type AddObjectTagParams struct {
@@ -22,9 +23,11 @@ type AddObjectTagParams struct {
 	TagHash  string `json:"tag_hash"`
 }
 
-func (q *Queries) AddObjectTag(ctx context.Context, arg AddObjectTagParams) error {
-	_, err := q.db.ExecContext(ctx, addObjectTag, arg.ObjectID, arg.TagHash)
-	return err
+func (q *Queries) AddObjectTag(ctx context.Context, arg AddObjectTagParams) (string, error) {
+	row := q.db.QueryRowContext(ctx, addObjectTag, arg.ObjectID, arg.TagHash)
+	var object_id string
+	err := row.Scan(&object_id)
+	return object_id, err
 }
 
 const deleteObjectTags = `-- name: DeleteObjectTags :exec

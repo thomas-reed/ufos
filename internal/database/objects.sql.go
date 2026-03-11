@@ -7,9 +7,11 @@ package database
 
 import (
 	"context"
+	"database/sql"
+	"time"
 )
 
-const createObject = `-- name: CreateObject :exec
+const createObject = `-- name: CreateObject :one
 INSERT INTO objects (
   id,
   prefix_hash,
@@ -28,6 +30,7 @@ VALUES (
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
 )
+RETURNING id, created_at
 `
 
 type CreateObjectParams struct {
@@ -38,24 +41,33 @@ type CreateObjectParams struct {
 	Metadata     []byte `json:"metadata"`
 }
 
-func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) error {
-	_, err := q.db.ExecContext(ctx, createObject,
+type CreateObjectRow struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) (CreateObjectRow, error) {
+	row := q.db.QueryRowContext(ctx, createObject,
 		arg.ID,
 		arg.PrefixHash,
 		arg.SizeBytes,
 		arg.UploadStatus,
 		arg.Metadata,
 	)
-	return err
+	var i CreateObjectRow
+	err := row.Scan(&i.ID, &i.CreatedAt)
+	return i, err
 }
 
-const deleteObject = `-- name: DeleteObject :exec
+const deleteObject = `-- name: DeleteObject :one
 DELETE FROM objects WHERE id = ?
+RETURNING id
 `
 
-func (q *Queries) DeleteObject(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, deleteObject, id)
-	return err
+func (q *Queries) DeleteObject(ctx context.Context, id string) (string, error) {
+	row := q.db.QueryRowContext(ctx, deleteObject, id)
+	err := row.Scan(&id)
+	return id, err
 }
 
 const getObject = `-- name: GetObject :one
@@ -150,32 +162,66 @@ func (q *Queries) ListObjectsByParent(ctx context.Context, prefixHash string) ([
 	return items, nil
 }
 
-const updateObject = `-- name: UpdateObject :exec
+const updateObject = `-- name: UpdateObject :one
 UPDATE objects
 SET
-  prefix_hash = ?,
-  size_bytes = ?,
-  upload_status = ?,
-  metadata = ?,
+  prefix_hash = COALESCE(?2, prefix_hash),
+  size_bytes = COALESCE(?3, size_bytes),
+  metadata = COALESCE(?4, metadata),
+  upload_status = COALESCE(?5, upload_status),
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
+RETURNING id, updated_at
 `
 
 type UpdateObjectParams struct {
-	PrefixHash   string `json:"prefix_hash"`
-	SizeBytes    int64  `json:"size_bytes"`
+	PrefixHash   sql.NullString `json:"prefix_hash"`
+	SizeBytes    sql.NullInt64  `json:"size_bytes"`
+	Metadata     []byte         `json:"metadata"`
+	UploadStatus sql.NullString `json:"upload_status"`
+	ID           string         `json:"id"`
+}
+
+type UpdateObjectRow struct {
+	ID        string    `json:"id"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (q *Queries) UpdateObject(ctx context.Context, arg UpdateObjectParams) (UpdateObjectRow, error) {
+	row := q.db.QueryRowContext(ctx, updateObject,
+		arg.PrefixHash,
+		arg.SizeBytes,
+		arg.Metadata,
+		arg.UploadStatus,
+		arg.ID,
+	)
+	var i UpdateObjectRow
+	err := row.Scan(&i.ID, &i.UpdatedAt)
+	return i, err
+}
+
+const updateStatus = `-- name: UpdateStatus :one
+UPDATE objects
+SET
+  upload_status = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, updated_at
+`
+
+type UpdateStatusParams struct {
 	UploadStatus string `json:"upload_status"`
-	Metadata     []byte `json:"metadata"`
 	ID           string `json:"id"`
 }
 
-func (q *Queries) UpdateObject(ctx context.Context, arg UpdateObjectParams) error {
-	_, err := q.db.ExecContext(ctx, updateObject,
-		arg.PrefixHash,
-		arg.SizeBytes,
-		arg.UploadStatus,
-		arg.Metadata,
-		arg.ID,
-	)
-	return err
+type UpdateStatusRow struct {
+	ID        string    `json:"id"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (q *Queries) UpdateStatus(ctx context.Context, arg UpdateStatusParams) (UpdateStatusRow, error) {
+	row := q.db.QueryRowContext(ctx, updateStatus, arg.UploadStatus, arg.ID)
+	var i UpdateStatusRow
+	err := row.Scan(&i.ID, &i.UpdatedAt)
+	return i, err
 }

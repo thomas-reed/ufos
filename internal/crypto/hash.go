@@ -55,3 +55,8 @@ func CreateVaultKey(password []byte, t, m uint32, p uint8) (key, salt []byte, er
 
 	return argon2.IDKey(password, salt, t, m, p, argonKeyLen), salt, nil
 }
+
+func HashAndBase64(payload []byte) string {
+	h := sha3.Sum256(payload)
+	return base64.StdEncoding.EncodeToString(h[:])
+}

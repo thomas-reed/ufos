@@ -21,7 +21,7 @@ func (s *Server) Router() *http.ServeMux {
 	// Step 1: Create the UFO in database (metadata)
 	apiMux.HandleFunc("POST /api/objects", s.HandleCreateUFO)
 	// Step 2: Stream the actual file bytes to the disk
-	apiMux.HandleFunc("PUT /api/objects/{uuid}", s.HandleUploadData)
+	apiMux.HandleFunc("PUT /api/objects/{uuid}", s.HandleUploadObject)
 
 	// Download UFO
 	apiMux.HandleFunc("GET /api/objects/{uuid}", s.HandleDownload)

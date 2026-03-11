@@ -9,9 +9,9 @@ import (
 )
 
 type Querier interface {
-	AddObjectTag(ctx context.Context, arg AddObjectTagParams) error
-	CreateObject(ctx context.Context, arg CreateObjectParams) error
-	DeleteObject(ctx context.Context, id string) error
+	AddObjectTag(ctx context.Context, arg AddObjectTagParams) (string, error)
+	CreateObject(ctx context.Context, arg CreateObjectParams) (CreateObjectRow, error)
+	DeleteObject(ctx context.Context, id string) (string, error)
 	DeleteObjectTags(ctx context.Context, objectID string) error
 	DeleteStaleRequests(ctx context.Context) error
 	GetObject(ctx context.Context, id string) (Object, error)
@@ -20,7 +20,8 @@ type Querier interface {
 	GetTagsForObject(ctx context.Context, objectID string) ([]ObjectTag, error)
 	ListObjectsByParent(ctx context.Context, prefixHash string) ([]Object, error)
 	NewRequest(ctx context.Context, id string) error
-	UpdateObject(ctx context.Context, arg UpdateObjectParams) error
+	UpdateObject(ctx context.Context, arg UpdateObjectParams) (UpdateObjectRow, error)
+	UpdateStatus(ctx context.Context, arg UpdateStatusParams) (UpdateStatusRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

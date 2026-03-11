@@ -1,4 +1,4 @@
--- name: CreateObject :exec
+-- name: CreateObject :one
 INSERT INTO objects (
   id,
   prefix_hash,
@@ -16,17 +16,27 @@ VALUES (
   ?,
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
-);
+)
+RETURNING id, created_at;
 
--- name: UpdateObject :exec
+-- name: UpdateObject :one
 UPDATE objects
 SET
-  prefix_hash = ?,
-  size_bytes = ?,
-  upload_status = ?,
-  metadata = ?,
+  prefix_hash = COALESCE(sqlc.narg('prefix_hash'), prefix_hash),
+  size_bytes = COALESCE(sqlc.narg('size_bytes'), size_bytes),
+  metadata = COALESCE(sqlc.narg('metadata'), metadata),
+  upload_status = COALESCE(sqlc.narg('upload_status'), upload_status),
   updated_at = CURRENT_TIMESTAMP
-WHERE id = ?;
+WHERE id = ?
+RETURNING id, updated_at;
+
+-- name: UpdateStatus :one
+UPDATE objects
+SET
+  upload_status = ?,
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = ?
+RETURNING id, updated_at;
 
 -- name: GetObject :one
 SELECT * FROM objects WHERE id = ?;
@@ -34,8 +44,9 @@ SELECT * FROM objects WHERE id = ?;
 -- name: ListObjectsByParent :many
 SELECT * FROM objects WHERE prefix_hash = ?;
 
--- name: DeleteObject :exec
-DELETE FROM objects WHERE id = ?;
+-- name: DeleteObject :one
+DELETE FROM objects WHERE id = ?
+RETURNING id;
 
 -- name: GetObjectsByTag :many
 SELECT objects.*
