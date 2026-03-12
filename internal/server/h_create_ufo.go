@@ -30,7 +30,7 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 	}
 
 	status := objects.StatusPending
-	if req.SizeBytes == 0 {
+	if req.SizeBytes <= 0 {
 		status = objects.StatusActive
 	}
 

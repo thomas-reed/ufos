@@ -28,7 +28,6 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Convert your request fields to Nullable types
 	params := database.UpdateObjectParams{
 		ID: ufoID,
 		PrefixHash: sql.NullString{String: req.PrefixHash, Valid: req.PrefixHash != ""},
@@ -43,5 +42,8 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	
-	jsonResponse(w, http.StatusOK, updated)
+	jsonResponse(w, http.StatusOK, api.UpdateUFOResponse{
+		ID: updated.ID,
+		UpdatedAt: updated.UpdatedAt,
+	})
 }

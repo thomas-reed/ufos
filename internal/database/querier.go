@@ -11,7 +11,7 @@ import (
 type Querier interface {
 	AddObjectTag(ctx context.Context, arg AddObjectTagParams) (string, error)
 	CreateObject(ctx context.Context, arg CreateObjectParams) (CreateObjectRow, error)
-	DeleteObject(ctx context.Context, id string) (string, error)
+	DeleteObject(ctx context.Context, id string) (DeleteObjectRow, error)
 	DeleteObjectTags(ctx context.Context, objectID string) error
 	DeleteStaleRequests(ctx context.Context) error
 	GetObject(ctx context.Context, id string) (Object, error)

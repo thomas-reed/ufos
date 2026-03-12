@@ -46,7 +46,7 @@ SELECT * FROM objects WHERE prefix_hash = ?;
 
 -- name: DeleteObject :one
 DELETE FROM objects WHERE id = ?
-RETURNING id;
+RETURNING id, size_bytes;
 
 -- name: GetObjectsByTag :many
 SELECT objects.*

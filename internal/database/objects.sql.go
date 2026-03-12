@@ -61,13 +61,19 @@ func (q *Queries) CreateObject(ctx context.Context, arg CreateObjectParams) (Cre
 
 const deleteObject = `-- name: DeleteObject :one
 DELETE FROM objects WHERE id = ?
-RETURNING id
+RETURNING id, size_bytes
 `
 
-func (q *Queries) DeleteObject(ctx context.Context, id string) (string, error) {
+type DeleteObjectRow struct {
+	ID        string `json:"id"`
+	SizeBytes int64  `json:"size_bytes"`
+}
+
+func (q *Queries) DeleteObject(ctx context.Context, id string) (DeleteObjectRow, error) {
 	row := q.db.QueryRowContext(ctx, deleteObject, id)
-	err := row.Scan(&id)
-	return id, err
+	var i DeleteObjectRow
+	err := row.Scan(&i.ID, &i.SizeBytes)
+	return i, err
 }
 
 const getObject = `-- name: GetObject :one
