@@ -206,7 +206,7 @@ SET
   upload_status = ?,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, updated_at
+RETURNING id, upload_status
 `
 
 type UpdateStatusParams struct {
@@ -215,13 +215,13 @@ type UpdateStatusParams struct {
 }
 
 type UpdateStatusRow struct {
-	ID        string    `json:"id"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID           string `json:"id"`
+	UploadStatus string `json:"upload_status"`
 }
 
 func (q *Queries) UpdateStatus(ctx context.Context, arg UpdateStatusParams) (UpdateStatusRow, error) {
 	row := q.db.QueryRowContext(ctx, updateStatus, arg.UploadStatus, arg.ID)
 	var i UpdateStatusRow
-	err := row.Scan(&i.ID, &i.UpdatedAt)
+	err := row.Scan(&i.ID, &i.UploadStatus)
 	return i, err
 }

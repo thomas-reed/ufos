@@ -36,7 +36,7 @@ SET
   upload_status = ?,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
-RETURNING id, updated_at;
+RETURNING id, upload_status;
 
 -- name: GetObject :one
 SELECT * FROM objects WHERE id = ?;

@@ -20,7 +20,7 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	ufoID := r.PathValue("id")
+	ufoID := r.PathValue("uuid")
 
 	var req api.UFOMetadataRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

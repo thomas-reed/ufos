@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	"github.com/thomas-reed/ufos/internal/crypto"
 )
 
-func (c *Client) Sign(r *http.Request, timestamp int64) error {
+func (c *Client) Sign(r *http.Request, timestamp int64, requiresBodyHash bool) error {
 	bodyHash := ""
-	if !(r.Method == http.MethodPut && strings.Contains(r.URL.Path, "/api/objects/")) {
+	if requiresBodyHash && r.Body != nil {
 		body, err := io.ReadAll(r.Body)
 		if err != nil {
 			return fmt.Errorf("Couldn't read request body: %w", err)
@@ -23,12 +22,14 @@ func (c *Client) Sign(r *http.Request, timestamp int64) error {
 		r.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
 
+	timestampStr := fmt.Sprintf("%d", timestamp)
+
 	payload := fmt.Sprintf(
-		"%s|%s|%s|%d|%s",
+		"%s|%s|%s|%s|%s",
 		r.Method,
 		r.URL.Path,
 		c.PersonaID,
-		timestamp,
+		timestampStr,
 		bodyHash,
 	)
 

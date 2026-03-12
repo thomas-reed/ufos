@@ -3,43 +3,28 @@ package server
 import "net/http"
 
 func (s *Server) Router() *http.ServeMux {
-	mainMux := http.NewServeMux()
+	authHash		:= s.Authenticate(true)
+  authNoHash	:= s.Authenticate(false)
+
+	mux := http.NewServeMux()
 
 	// PUBLIC BRANCH
-	mainMux.HandleFunc("GET /healthz", HandleHealth)
+	mux.HandleFunc("GET /healthz", HandleHealth)
 
-	// PROTECTED BRANCH (requests go through Authenticate method)
-	apiMux := http.NewServeMux()
-
-	// Gets all UFO metadata by prefix_hash
-	apiMux.HandleFunc("GET /api/objects", s.HandleList)
-
-	// Search all UFOs by tag_hashes
-	apiMux.HandleFunc("GET /api/tags", s.HandleSearch)
-
-	// Upload
-	// Step 1: Create the UFO in database (metadata)
-	apiMux.HandleFunc("POST /api/objects", s.HandleCreateUFO)
-	// Step 2: Stream the actual file bytes to the disk
-	apiMux.HandleFunc("PUT /api/objects/{uuid}", s.HandleUploadObject)
-
-	// Download UFO
-	apiMux.HandleFunc("GET /api/objects/{uuid}", s.HandleDownload)
-
-	// Update UFO metadata
-	apiMux.HandleFunc("PATCH /api/objects/{uuid}", s.HandleUpdateUFO)
-
-	// Remove UFO
-	apiMux.HandleFunc("DELETE /api/objects/{uuid}", s.HandleRemove)
-
-	// Authenticated endpoint to generate a NEW_PERSONA_TOKEN
-	apiMux.HandleFunc("POST /api/init", s.HandleInitPersona)
-
-	// Mount the apiMux under the Authenticate middleware
-	mainMux.Handle("/api/", s.Authenticate(apiMux))
-
+	// PROTECTED BRANCH
+	// Auth requires body hash
+	mux.Handle("GET /api/objects", authHash(http.HandlerFunc(s.HandleList)))
+	mux.Handle("GET /api/tags", authHash(http.HandlerFunc(s.HandleSearch)))
+	mux.Handle("POST /api/objects", authHash(http.HandlerFunc(s.HandleCreateUFO)))
+	mux.Handle("GET /api/objects/{uuid}", authHash(http.HandlerFunc(s.HandleDownloadUFO)))
+	mux.Handle("PATCH /api/objects/{uuid}", authHash(http.HandlerFunc(s.HandleUpdateUFO)))
+	mux.Handle("DELETE /api/objects/{uuid}", authHash(http.HandlerFunc(s.HandleRemoveUFO)))
+	mux.Handle("POST /api/init", authHash(http.HandlerFunc(s.HandleInitPersona)))
+	// Auth does not require body hash
+	mux.Handle("PUT /api/objects/{uuid}", authNoHash(http.HandlerFunc(s.HandleUploadObject)))
+	
 	// "NEW PERSONA" BRANCH (request must contain valid NEW_PERSONA_TOKEN)
-	mainMux.HandleFunc("POST /api/personas", s.HandleCreatePersona)
+	mux.HandleFunc("POST /api/personas", s.HandleCreatePersona)
 
-	return mainMux
+	return mux
 }
