@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/joho/godotenv"
 	_ "github.com/mattn/go-sqlite3"
@@ -13,13 +14,20 @@ import (
 	"github.com/thomas-reed/ufos/internal/database"
 )
 
+const (
+	tokenLifetime   = 15 * time.Minute
+	janitorInterval = 5 * time.Minute
+)
+
 type Server struct {
-	HTTPServer       *http.Server
-	Port             string
-	newPersonaToken  string
-	mu               sync.RWMutex
-	registryFilepath string
-	Registry         map[string]*Persona
+	HTTPServer        *http.Server
+	Port              string
+	mu                sync.RWMutex
+	WG                sync.WaitGroup
+	registrationToken string
+	tokenCreated      time.Time
+	registryFilepath  string
+	Registry          map[string]*Persona
 }
 
 func NewServer() (*Server, error) {
