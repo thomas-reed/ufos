@@ -53,8 +53,8 @@ func (s *Server) HandleUploadObject(w http.ResponseWriter, r *http.Request) {
 	}
 	// Continue with upload in case of pending or failed states
 	p.db.UpdateStatus(r.Context(), database.UpdateStatusParams{
-			ID: ufoID,
-			UploadStatus: string(objects.StatusUploading),
+		ID:           ufoID,
+		UploadStatus: string(objects.StatusUploading),
 	})
 
 	// Open the physical file on the disk
@@ -108,7 +108,7 @@ func (s *Server) HandleUploadObject(w http.ResponseWriter, r *http.Request) {
 		w,
 		http.StatusOK,
 		api.UploadObjectResponse{
-			ID: ufoID,
+			ID:     ufoID,
 			Status: objects.ObjectStatus(res.UploadStatus),
 		},
 	)

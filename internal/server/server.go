@@ -37,7 +37,6 @@ func NewServer() (*Server, error) {
 	if s.registryFilepath == "" {
 		return nil, fmt.Errorf("Registry filepath not found")
 	}
-	s.newPersonaToken = os.Getenv("NEW_PERSONA_TOKEN")
 
 	err = s.LoadRegistry(s.registryFilepath)
 

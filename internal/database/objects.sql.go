@@ -95,15 +95,12 @@ func (q *Queries) GetObject(ctx context.Context, id string) (Object, error) {
 	return i, err
 }
 
-const getObjectsByTag = `-- name: GetObjectsByTag :many
-SELECT objects.id, objects.prefix_hash, objects.size_bytes, objects.upload_status, objects.metadata, objects.created_at, objects.updated_at
-FROM objects
-INNER JOIN object_tags ON object_tags.object_id = objects.id
-WHERE object_tags.tag_hash = ?
+const getObjectsByParent = `-- name: GetObjectsByParent :many
+SELECT id, prefix_hash, size_bytes, upload_status, metadata, created_at, updated_at FROM objects WHERE prefix_hash = ?
 `
 
-func (q *Queries) GetObjectsByTag(ctx context.Context, tagHash string) ([]Object, error) {
-	rows, err := q.db.QueryContext(ctx, getObjectsByTag, tagHash)
+func (q *Queries) GetObjectsByParent(ctx context.Context, prefixHash string) ([]Object, error) {
+	rows, err := q.db.QueryContext(ctx, getObjectsByParent, prefixHash)
 	if err != nil {
 		return nil, err
 	}
@@ -133,12 +130,15 @@ func (q *Queries) GetObjectsByTag(ctx context.Context, tagHash string) ([]Object
 	return items, nil
 }
 
-const listObjectsByParent = `-- name: ListObjectsByParent :many
-SELECT id, prefix_hash, size_bytes, upload_status, metadata, created_at, updated_at FROM objects WHERE prefix_hash = ?
+const getObjectsByTag = `-- name: GetObjectsByTag :many
+SELECT objects.id, objects.prefix_hash, objects.size_bytes, objects.upload_status, objects.metadata, objects.created_at, objects.updated_at
+FROM objects
+INNER JOIN object_tags ON object_tags.object_id = objects.id
+WHERE object_tags.tag_hash = ?
 `
 
-func (q *Queries) ListObjectsByParent(ctx context.Context, prefixHash string) ([]Object, error) {
-	rows, err := q.db.QueryContext(ctx, listObjectsByParent, prefixHash)
+func (q *Queries) GetObjectsByTag(ctx context.Context, tagHash string) ([]Object, error) {
+	rows, err := q.db.QueryContext(ctx, getObjectsByTag, tagHash)
 	if err != nil {
 		return nil, err
 	}

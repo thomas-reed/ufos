@@ -2,8 +2,9 @@ package server
 
 import (
 	"encoding/json"
-	"github.com/google/uuid"
 	"net/http"
+
+	"github.com/google/uuid"
 
 	"github.com/thomas-reed/ufos/internal/api"
 	"github.com/thomas-reed/ufos/internal/database"
@@ -35,11 +36,11 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := database.CreateObjectParams{
-		ID: ufoID,
-		PrefixHash: req.PrefixHash,
-		SizeBytes: req.SizeBytes,
+		ID:           ufoID,
+		PrefixHash:   req.PrefixHash,
+		SizeBytes:    req.SizeBytes,
 		UploadStatus: string(status),
-		Metadata: req.Metadata,
+		Metadata:     req.Metadata,
 	}
 
 	res, err := p.db.CreateObject(r.Context(), params)
@@ -47,12 +48,9 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "failed to create object", err)
 		return
 	}
-	jsonResponse(
-		w,
-		http.StatusCreated,
-		api.CreateUFOResponse{
-			ID: res.ID,
-			CreatedAt: res.CreatedAt,
-		},
+	jsonResponse(w, http.StatusCreated, api.CreateUFOResponse{
+		ID:        res.ID,
+		CreatedAt: res.CreatedAt,
+	},
 	)
 }

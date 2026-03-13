@@ -3,8 +3,8 @@ package server
 import "net/http"
 
 func (s *Server) Router() *http.ServeMux {
-	authHash		:= s.Authenticate(true)
-  authNoHash	:= s.Authenticate(false)
+	authHash := s.Authenticate(true)
+	authNoHash := s.Authenticate(false)
 
 	mux := http.NewServeMux()
 
@@ -22,7 +22,7 @@ func (s *Server) Router() *http.ServeMux {
 	mux.Handle("POST /api/init", authHash(http.HandlerFunc(s.HandleInitPersona)))
 	// Auth does not require body hash
 	mux.Handle("PUT /api/objects/{uuid}", authNoHash(http.HandlerFunc(s.HandleUploadObject)))
-	
+
 	// "NEW PERSONA" BRANCH (request must contain valid NEW_PERSONA_TOKEN)
 	mux.HandleFunc("POST /api/personas", s.HandleCreatePersona)
 

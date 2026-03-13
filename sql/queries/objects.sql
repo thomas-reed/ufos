@@ -41,7 +41,7 @@ RETURNING id, upload_status;
 -- name: GetObject :one
 SELECT * FROM objects WHERE id = ?;
 
--- name: ListObjectsByParent :many
+-- name: GetObjectsByParent :many
 SELECT * FROM objects WHERE prefix_hash = ?;
 
 -- name: DeleteObject :one

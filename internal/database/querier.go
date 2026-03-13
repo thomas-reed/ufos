@@ -15,10 +15,10 @@ type Querier interface {
 	DeleteObjectTags(ctx context.Context, objectID string) error
 	DeleteStaleRequests(ctx context.Context) error
 	GetObject(ctx context.Context, id string) (Object, error)
+	GetObjectsByParent(ctx context.Context, prefixHash string) ([]Object, error)
 	GetObjectsByTag(ctx context.Context, tagHash string) ([]Object, error)
 	GetRequestByID(ctx context.Context, id string) (Request, error)
 	GetTagsForObject(ctx context.Context, objectID string) ([]ObjectTag, error)
-	ListObjectsByParent(ctx context.Context, prefixHash string) ([]Object, error)
 	NewRequest(ctx context.Context, id string) error
 	UpdateObject(ctx context.Context, arg UpdateObjectParams) (UpdateObjectRow, error)
 	UpdateStatus(ctx context.Context, arg UpdateStatusParams) (UpdateStatusRow, error)
