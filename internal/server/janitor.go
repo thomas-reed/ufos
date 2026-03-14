@@ -17,7 +17,8 @@ func (s *Server) StartJanitor(ctx context.Context) {
 			log.Println("Janitor: Starting scheduled sweep...")
 			// Clean up expired registration token
 			s.mu.Lock()
-			if s.registrationToken != "" && time.Since(s.tokenCreated) > tokenLifetime {
+			// Check the registration token is populated, has expired, and is not the bootstrap token
+			if s.registrationToken != "" && time.Since(s.tokenCreated) > tokenLifetime && !s.tokenCreated.IsZero(){
 				s.registrationToken = ""
 				s.tokenCreated = time.Time{}
 				log.Println("Janitor: Cleared expired registration token.")

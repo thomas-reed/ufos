@@ -4,6 +4,7 @@ import (
 	"crypto/ed25519"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -19,13 +20,17 @@ type Persona struct {
 	db        *database.Queries
 }
 
-func (s *Server) LoadRegistry(path string) error {
-	data, err := os.ReadFile(path)
+func (s *Server) LoadRegistry() error {
+	data, err := os.ReadFile(s.registryPath)
 	if err != nil {
-		return fmt.Errorf("Error reading registry file")
+		if errors.Is(err, os.ErrNotExist) {
+			s.Registry = make(map[string]*Persona)
+			return s.SaveRegistry()
+		}
+		return fmt.Errorf("Error reading registry file: %w", err)
 	}
 	if err := json.Unmarshal(data, &s.Registry); err != nil {
-		return fmt.Errorf("Error unmarshalling registry data")
+		return fmt.Errorf("Error unmarshalling registry data: %w", err)
 	}
 	return nil
 }
@@ -39,7 +44,7 @@ func (s *Server) SaveRegistry() error {
 		return err
 	}
 	// 0600 ensures only the server process can read/write this file
-	return os.WriteFile(s.registryFilepath, data, 0600)
+	return os.WriteFile(s.registryPath, data, 0600)
 }
 
 func (s *Server) GetPersona(personaID string) (*Persona, bool) {
@@ -52,8 +57,14 @@ func (s *Server) GetPersona(personaID string) (*Persona, bool) {
 
 func (s *Server) AddPersona(p Persona) error {
 	s.mu.Lock()
+	for _, persona := range s.Registry {
+		if p.ID == persona.ID {
+			return fmt.Errorf("Duplicate ID")
+		}
+	}
 	newP := p
 	s.Registry[p.ID] = &newP
+	s.registrationToken = "" // ensure token is wiped out
 	s.mu.Unlock()
 
 	return s.SaveRegistry()

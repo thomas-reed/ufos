@@ -21,6 +21,7 @@ type UploadObjectResponse struct {
 	Status objects.ObjectStatus `json:"status"`
 }
 
+// List, Search return a []UFOItem
 type UFOItem struct {
 	ID         string               `json:"id"`
 	PrefixHash string               `json:"prefix_hash"`
@@ -33,4 +34,8 @@ type UFOItem struct {
 
 type InitPersonaResponse struct {
 	RegistrationToken string `json:"registration_token"`
+}
+
+type CreatePersonaResponse struct {
+	ID string `json:"ID"`
 }
