@@ -3,6 +3,7 @@ package client
 import (
 	"crypto/ed25519"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -46,23 +47,14 @@ type KDF struct {
 	Parallelism uint8  `json:"parallelism"`
 }
 
-func (c *Client) getVaultFilepath() error {
-	homedir, err := os.UserHomeDir()
-	if err != nil {
-		return fmt.Errorf("Could not get homedir: %w", err)
-	}
-	c.VaultPath = filepath.Join(homedir, vaultFilename)
-	return nil
-}
-
-func (c *Client) GetPersonaFromVault(password []byte) error {
-	v, err := c.loadVault()
+func (c *Client) GetPersonaFromVault(personaName string, password []byte) error {
+	v, err := loadVault()
 	if err != nil {
 		return err
 	}
 	switch v.Version {
 	case VaultV1:
-		if err = c.getPersonaFromVaultV1(v, password); err != nil {
+		if err = c.getPersonaFromVaultV1(v, personaName, password); err != nil {
 			return err
 		}
 
@@ -72,62 +64,11 @@ func (c *Client) GetPersonaFromVault(password []byte) error {
 	return nil
 }
 
-func (c *Client) AddPersonaToVault(baseURL string, password []byte) error {
-	v, err := c.loadVault()
-	if err != nil {
-		return err
-	}
-
-	switch v.Version {
-	case VaultV1:
-		if err = c.addPersonaToVaultV1(baseURL, password); err != nil {
-			return err
-		}
-
-	default:
-		return fmt.Errorf("Invalid vault version")
-	}
-	return nil
-}
-
-func (c *Client) CreateNewVault(baseURL string, password []byte) error {
-	if _, err := os.Stat(c.VaultPath); err == nil {
-		return fmt.Errorf("Vault already exists")
-	}
-	var v Vault
-	var vaultKey []byte
-	var err error
-
-	v.Version = VaultV1
-	v.KDFParams.TimeCost = timeCost
-	v.KDFParams.MemoryCost = memoryCost
-	v.KDFParams.Parallelism = parallelism
-	vaultKey, v.KDFSalt, err = crypto.CreateVaultKey(
-		password,
-		v.KDFParams.TimeCost,
-		v.KDFParams.MemoryCost,
-		v.KDFParams.Parallelism,
-	)
-	defer clear(vaultKey)
-
-	persona, err := c.buildPersona(baseURL)
-	if err != nil {
-		return err
-	}
-	defer clear(persona.PrivateKey)
-
-	payload, err := json.Marshal([]Persona{persona})
-	defer clear(payload)
-
-	v.Payload, err = crypto.Encrypt(vaultKey, payload, crypto.CryptoSuiteV1)
-	if err != nil {
-		return fmt.Errorf("Error encrypting persona payload: %w", err)
-	}
-
-	return c.saveVault(v)
-}
-
-func (c *Client) getPersonaFromVaultV1(v Vault, password []byte) error {
+func (c *Client) getPersonaFromVaultV1(
+	v *Vault,
+	personaName string,
+	password []byte,
+) error {
 	vaultKey, err := crypto.DeriveVaultKey(
 		password,
 		v.KDFSalt,
@@ -147,18 +88,18 @@ func (c *Client) getPersonaFromVaultV1(v Vault, password []byte) error {
 	if err != nil {
 		return fmt.Errorf("Error unmarshalling vault data: %w", err)
 	}
-	defer func() {
-		for i := range personas {
-			clear(personas[i].PrivateKey)
-		}
-	}()
+	// defer func() {
+	// 	for i := range personas {
+	// 		clear(personas[i].PrivateKey)
+	// 	}
+	// }()
 
-	if err = c.resolvePersona(personas); err != nil {
+	if err = c.resolvePersona(personas, personaName); err != nil {
 		return err
 	}
 	for i := range personas {
-		if c.PersonaData.Name == personas[i].Name &&
-			c.PersonaData.BaseURL == personas[i].BaseURL {
+		if c.ActivePersona.Name == personas[i].Name &&
+			c.ActivePersona.BaseURL == personas[i].BaseURL {
 			c.PersonaData.PrivateKey = make([]byte, len(personas[i].PrivateKey))
 			copy(c.PersonaData.PrivateKey, personas[i].PrivateKey)
 			c.PersonaID = crypto.DerivePersonaID(
@@ -174,49 +115,41 @@ func (c *Client) getPersonaFromVaultV1(v Vault, password []byte) error {
 	return nil
 }
 
-func (c *Client) resolvePersona(personas []Persona) error {
-	parts := strings.Split(c.PersonaData.Name, "@")
+func (c *Client) resolvePersona(personas []Persona, personaName string) error {
+	parts := strings.Split(personaName, "@")
 	if len(parts) > 2 {
 		return fmt.Errorf("Persona name invalid. Usage: <name>[@<domain>]")
 	}
-	personaName := parts[0]
-	domains := []string{}
+	name := parts[0]
+	domain := ""
+	if len(parts) == 2 {
+		domain = parts[1]
+	}
+	
+	var matches []*Persona
 	for _, persona := range personas {
-		if persona.Name == personaName {
-			domains = append(domains, persona.BaseURL)
+		if domain != "" && domain == persona.BaseURL && name == persona.Name {
+			 matches = append(matches, &persona)
+			 break
 		}
+		if domain == "" && name == persona.Name {
+			matches = append(matches, &persona)
+			continue
+		}
+		clear(persona.PrivateKey)
 	}
 
-	switch len(domains) {
+	switch len(matches) {
 	case 0:
-		return fmt.Errorf("Persona '%s' not found", personaName)
+		return fmt.Errorf("Persona '%s' not found", name)
 	case 1:
-		// If the user was explicit (name@domain), it should match the one returned
-		if len(parts) == 2 && domains[0] != parts[1] {
-			return fmt.Errorf(
-				"Persona '%s' not found for domain '%s'",
-				personaName,
-				parts[1],
-			)
-		}
-		c.PersonaData.Name = personaName
-		c.PersonaData.BaseURL = domains[0]
+		c.ActivePersona = matches[0]
 		return nil
-	default: // domains >= 2
-		// If the user was explicit, find the domain they specified
-		if len(parts) == 2 {
-			for _, domain := range domains {
-				if domain == parts[1] {
-					c.PersonaData.Name = personaName
-					c.PersonaData.BaseURL = domain
-					return nil
-				}
-			}
-			return fmt.Errorf(
-				"Persona '%s' not found for domain '%s'",
-				personaName,
-				parts[1],
-			)
+	default: // matches more than 1
+		var domains []string
+		for _, p := range matches {
+			domains = append(domains, p.BaseURL)
+			clear(p.PrivateKey)
 		}
 		return fmt.Errorf(
 			"Use '%s@<domain>' - multiple domains found: %q",
@@ -226,28 +159,31 @@ func (c *Client) resolvePersona(personas []Persona) error {
 	}
 }
 
-func (c *Client) loadVault() (vault Vault, err error) {
-	data, err := os.ReadFile(c.VaultPath)
-	if err != nil {
-		return Vault{}, fmt.Errorf("Could not read vault file: %w", err)
-	}
-	if err := json.Unmarshal(data, &vault); err != nil {
-		return Vault{}, fmt.Errorf("Error unmarshalling vault data: %w", err)
-	}
-	return vault, nil
-}
-
-func (c *Client) saveVault(v Vault) error {
-	data, err := json.MarshalIndent(v, "", "  ")
+func (c *Client) AddPersonaToVault(
+	personaName, baseURL string,
+	password []byte,
+) error {
+	v, err := loadVault()
 	if err != nil {
 		return err
 	}
-	// 0600 ensures only the server process can read/write this file
-	return os.WriteFile(c.VaultPath, data, 0600)
+
+	switch v.Version {
+	case VaultV1:
+		if err = c.addPersonaToVaultV1(personaName, baseURL, password); err != nil {
+			return err
+		}
+
+	default:
+		return fmt.Errorf("Invalid vault version")
+	}
+	return nil
 }
 
-func (c *Client) addPersonaToVaultV1(baseURL string, password []byte) error {
-	v, err := c.loadVault()
+func (c *Client) addPersonaToVaultV1(
+	personaName, baseURL string,
+	password []byte) error {
+	v, err := loadVault()
 	if err != nil {
 		return err
 	}
@@ -277,16 +213,16 @@ func (c *Client) addPersonaToVaultV1(baseURL string, password []byte) error {
 	}()
 
 	var persona Persona
-	for i := range personas {
-		if personas[i].BaseURL == baseURL {
-			persona.Name = c.PersonaData.Name
+	for _, p := range personas {
+		if p.BaseURL == baseURL {
+			persona.Name = c.ActivePersona.Name
 			persona.BaseURL = baseURL
 			persona.PrivateKey = make([]byte, len(personas[i].PrivateKey))
 			copy(persona.PrivateKey, personas[i].PrivateKey)
 		}
 	}
 	if persona.PrivateKey == nil {
-		persona, err = c.buildPersona(baseURL)
+		persona, err = buildPersona(c.ActivePersona.Name, baseURL)
 		if err != nil {
 			return err
 		}
@@ -300,12 +236,60 @@ func (c *Client) addPersonaToVaultV1(baseURL string, password []byte) error {
 		return fmt.Errorf("Error encrypting persona payload: %w", err)
 	}
 
-	return c.saveVault(v)
+	return saveVault(v)
 }
 
-func (c *Client) buildPersona(baseURL string) (Persona, error) {
+func getVaultFilepath() (string, error) {
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("Could not get homedir: %w", err)
+	}
+	return filepath.Join(homedir, vaultFilename), nil
+}
+
+func CreateNewVault(personaName, baseURL string, password []byte) error {
+	vaultPath, err := getVaultFilepath()
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(vaultPath); err == nil {
+		return fmt.Errorf("Vault already exists")
+	}
+	var v Vault
+	var vaultKey []byte
+
+	v.Version = VaultV1
+	v.KDFParams.TimeCost = timeCost
+	v.KDFParams.MemoryCost = memoryCost
+	v.KDFParams.Parallelism = parallelism
+	vaultKey, v.KDFSalt, err = crypto.CreateVaultKey(
+		password,
+		v.KDFParams.TimeCost,
+		v.KDFParams.MemoryCost,
+		v.KDFParams.Parallelism,
+	)
+	defer clear(vaultKey)
+
+	persona, err := buildPersona(personaName, baseURL)
+	if err != nil {
+		return err
+	}
+	defer clear(persona.PrivateKey)
+
+	payload, err := json.Marshal([]Persona{persona})
+	defer clear(payload)
+
+	v.Payload, err = crypto.Encrypt(vaultKey, payload, crypto.CryptoSuiteV1)
+	if err != nil {
+		return fmt.Errorf("Error encrypting persona payload: %w", err)
+	}
+
+	return saveVault(&v)
+}
+
+func buildPersona(personaName, baseURL string) (Persona, error) {
 	persona := Persona{
-		Name:    c.PersonaData.Name,
+		Name:    personaName,
 		BaseURL: baseURL,
 	}
 	_, privateKey, err := crypto.GenerateAsymPrivateKey()
@@ -314,4 +298,35 @@ func (c *Client) buildPersona(baseURL string) (Persona, error) {
 	}
 	persona.PrivateKey = privateKey
 	return persona, nil
+}
+
+func saveVault(v *Vault) error {
+	vaultPath, err := getVaultFilepath()
+	if err != nil {
+		return err
+	}
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return err
+	}
+	// 0600 ensures only the server process can read/write this file
+	return os.WriteFile(vaultPath, data, 0600)
+}
+
+func loadVault() (vault *Vault, err error) {
+	vaultPath, err := getVaultFilepath()
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(vaultPath)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("Vault not found, Run 'ufos init' to create a vault.")
+	}
+	if err != nil {
+		return nil, fmt.Errorf("Could not read vault file: %w", err)
+	}
+	if err := json.Unmarshal(data, &vault); err != nil {
+		return nil, fmt.Errorf("Error unmarshalling vault data: %w", err)
+	}
+	return vault, nil
 }

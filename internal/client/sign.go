@@ -33,7 +33,7 @@ func (c *Client) Sign(r *http.Request, timestamp int64, requiresBodyHash bool) e
 		bodyHash,
 	)
 
-	signature := crypto.SignRequest(c.PersonaData.PrivateKey, []byte(payload))
+	signature := crypto.SignRequest(c.ActivePersona.PrivateKey, []byte(payload))
 
 	r.Header.Set("X-UFO-Persona", c.PersonaID)
 	r.Header.Set("X-UFO-Timestamp", fmt.Sprintf("%d", timestamp))

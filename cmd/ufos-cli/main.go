@@ -1,24 +1,37 @@
-package cmd
+package main
 
 import (
 	"log"
+	"os"
+	"strings"
 
 	"github.com/thomas-reed/ufos/internal/client"
 )
 
 func main() {
-	// register cmds like in gator
-	// read cmd line parameters, get cmd, parameters
-	// get password using term.ReadPassword()
-	personaName := ""
-	password := []byte{}
-	c, err := client.NewClient(password, personaName)
+	c, err := client.NewClient()
 	if err != nil {
 		log.Fatalf("Error initializing client: %v", err)
 	}
-	// handle cmd, sign request, send to server
+	defer clear(c.ActivePersona.PrivateKey)
+	defer clear(c.MasterKey)
+	// build command registry
+	cmds := client.Commands{
+		Registry: make(map[string]func(cmd client.Command) error),
+	}
+	cmds.Register("something", c.handleSomething)
 
-	// as soon as necessary wipe sensitive data.  should i just clear entire client?
-	clear(c.PersonaData.PrivateKey)
-	clear(c.MasterKey)
+	// parse cmd line arguments
+	if len(os.Args) < 2 {
+		log.Fatalln("Too few arguments.  Usage: ufos <command> [args...]")
+	}
+	cmdName := strings.ToLower(os.Args[1])
+	cmdArgs := os.Args[2:]
+
+	// run given command
+	if err = cmds.Run(client.Command{Name: cmdName, Args: cmdArgs}); err != nil {
+		log.Fatalf("Error running %s command: %s\n", cmdName, err)
+	}
+
+	os.Exit(0);
 }
