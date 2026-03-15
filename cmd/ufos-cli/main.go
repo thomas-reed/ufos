@@ -19,7 +19,16 @@ func main() {
 	cmds := client.Commands{
 		Registry: make(map[string]func(cmd client.Command) error),
 	}
-	cmds.Register("Init", client.Init)
+	cmds.Register("init", client.HandleInit)
+	cmds.Register("register", c.HandleCreatePersona)
+	cmds.Register("new", c.HandleNewPersona)
+	cmds.Register("download", c.HandleDownloadUFO)
+	cmds.Register("ping", c.HandleHealthCheck)
+	cmds.Register("list", c.HandleList)
+	cmds.Register("remove", c.HandleRemoveUFO)
+	cmds.Register("search", c.HandleSearch)
+	cmds.Register("update", c.HandleUpdateUFO)
+	cmds.Register("upload", c.HandleUploadUFO)
 
 	// parse cmd line arguments
 	if len(os.Args) < 2 {

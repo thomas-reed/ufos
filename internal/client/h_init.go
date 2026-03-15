@@ -9,7 +9,7 @@ import (
 	"golang.org/x/term"
 )
 
-func Init(cmd Command) error {
+func HandleInit(cmd Command) error {
 	fmt.Println("Welcome to UFOs!")
 	fmt.Println("(U)nidentifiable (F)ile/(O)bject (s)torage")
 	fmt.Println()
