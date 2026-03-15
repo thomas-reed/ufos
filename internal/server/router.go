@@ -13,15 +13,15 @@ func (s *Server) Router() *http.ServeMux {
 
 	// PROTECTED BRANCH
 	// Auth requires body hash
-	mux.Handle("GET /api/objects", authHash(http.HandlerFunc(s.HandleList)))
-	mux.Handle("GET /api/tags", authHash(http.HandlerFunc(s.HandleSearch)))
-	mux.Handle("POST /api/objects", authHash(http.HandlerFunc(s.HandleCreateUFO)))
-	mux.Handle("GET /api/objects/{uuid}", authHash(http.HandlerFunc(s.HandleDownloadUFO)))
-	mux.Handle("PATCH /api/objects/{uuid}", authHash(http.HandlerFunc(s.HandleUpdateUFO)))
-	mux.Handle("DELETE /api/objects/{uuid}", authHash(http.HandlerFunc(s.HandleRemoveUFO)))
 	mux.Handle("POST /api/init", authHash(http.HandlerFunc(s.HandleInitPersona)))
+	mux.Handle("GET /api/ufos", authHash(http.HandlerFunc(s.HandleList)))
+	mux.Handle("POST /api/ufos", authHash(http.HandlerFunc(s.HandleCreateUFO)))
+	mux.Handle("GET /api/ufos/{uuid}", authHash(http.HandlerFunc(s.HandleDownloadUFO)))
+	mux.Handle("PATCH /api/ufos/{uuid}", authHash(http.HandlerFunc(s.HandleUpdateUFO)))
+	mux.Handle("DELETE /api/ufos/{uuid}", authHash(http.HandlerFunc(s.HandleRemoveUFO)))
+	mux.Handle("GET /api/tags", authHash(http.HandlerFunc(s.HandleSearch)))
 	// Auth does not require body hash
-	mux.Handle("PUT /api/objects/{uuid}", authNoHash(http.HandlerFunc(s.HandleUploadObject)))
+	mux.Handle("PUT /api/ufos/{uuid}", authNoHash(http.HandlerFunc(s.HandleUploadUFO)))
 
 	// "NEW PERSONA" BRANCH (request must contain valid NEW_PERSONA_TOKEN)
 	mux.HandleFunc("POST /api/personas", s.HandleCreatePersona)

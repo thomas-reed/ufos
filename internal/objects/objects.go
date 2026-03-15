@@ -5,13 +5,13 @@ import (
 	"strings"
 )
 
-type ObjectStatus string
+type UFOStatus string
 
 const (
-	StatusPending   ObjectStatus = "pending"   // Row created, waiting for file
-	StatusUploading ObjectStatus = "uploading" // Server is currently io.Copy-ing
-	StatusActive    ObjectStatus = "active"    // File is safe on disk
-	StatusFailed    ObjectStatus = "failed"    // Upload was interrupted or error occurred
+	StatusPending   UFOStatus = "pending"   // Row created, waiting for file
+	StatusUploading UFOStatus = "uploading" // Server is currently io.Copy-ing
+	StatusActive    UFOStatus = "active"    // File is safe on disk
+	StatusFailed    UFOStatus = "failed"    // Upload was interrupted or error occurred
 )
 
 type ObjectMetadata struct {
@@ -25,7 +25,7 @@ type ObjectMetadata struct {
 
 type AccessEntry struct {
 	RecipientID string `json:"id"`
-	WrappedKey  []byte `json:"key"` // The DEK encrypted for this person
+	WrappedKey  []byte `json:"key"` // The DEK encrypted for this recipient
 }
 
 func GrantAccess(m *ObjectMetadata, recipientID string) {

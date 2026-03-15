@@ -9,7 +9,19 @@ import (
 	"time"
 )
 
-type Object struct {
+type Orbit struct {
+	PersonaID string         `json:"persona_id"`
+	PublicKey []byte         `json:"public_key"`
+	Alias     sql.NullString `json:"alias"`
+	AddedAt   time.Time      `json:"added_at"`
+}
+
+type Request struct {
+	ID        string       `json:"id"`
+	CreatedAt sql.NullTime `json:"created_at"`
+}
+
+type Ufo struct {
 	ID           string    `json:"id"`
 	PrefixHash   string    `json:"prefix_hash"`
 	SizeBytes    int64     `json:"size_bytes"`
@@ -19,12 +31,12 @@ type Object struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-type ObjectTag struct {
-	ObjectID string `json:"object_id"`
-	TagHash  string `json:"tag_hash"`
+type UfoAccess struct {
+	UfoID     string `json:"ufo_id"`
+	PersonaID string `json:"persona_id"`
 }
 
-type Request struct {
-	ID        string       `json:"id"`
-	CreatedAt sql.NullTime `json:"created_at"`
+type UfoTag struct {
+	UfoID   string `json:"ufo_id"`
+	TagHash string `json:"tag_hash"`
 }

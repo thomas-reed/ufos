@@ -29,7 +29,7 @@ func (s *Server) HandleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	list, err := p.db.GetObjectsByParent(r.Context(), prefix)
+	list, err := p.db.GetUFOsByParent(r.Context(), prefix)
 	if err != nil {
 		respondWithError(
 			w,
@@ -46,7 +46,7 @@ func (s *Server) HandleList(w http.ResponseWriter, r *http.Request) {
 			ID:         list[i].ID,
 			PrefixHash: list[i].PrefixHash,
 			SizeBytes:  list[i].SizeBytes,
-			Status:     objects.ObjectStatus(list[i].UploadStatus),
+			Status:     objects.UFOStatus(list[i].UploadStatus),
 			Metadata:   list[i].Metadata,
 			CreatedAt:  list[i].CreatedAt,
 			UpdatedAt:  list[i].UpdatedAt,

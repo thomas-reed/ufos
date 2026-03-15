@@ -31,7 +31,7 @@ func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
 
 	ufoMap := make(map[string]api.UFOItem)
 	for _, tag := range tagList {
-		dbRows, err := p.db.GetObjectsByTag(r.Context(), tag)
+		dbRows, err := p.db.GetUFOsByTag(r.Context(), tag)
 		if err != nil {
 			respondWithError(
 				w,
@@ -46,7 +46,7 @@ func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
 				ID:         row.ID,
 				PrefixHash: row.PrefixHash,
 				SizeBytes:  row.SizeBytes,
-				Status:     objects.ObjectStatus(row.UploadStatus),
+				Status:     objects.UFOStatus(row.UploadStatus),
 				Metadata:   row.Metadata,
 				CreatedAt:  row.CreatedAt,
 				UpdatedAt:  row.UpdatedAt,

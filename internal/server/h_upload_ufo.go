@@ -11,7 +11,7 @@ import (
 	"github.com/thomas-reed/ufos/internal/objects"
 )
 
-func (s *Server) HandleUploadObject(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleUploadUFO(w http.ResponseWriter, r *http.Request) {
 	p, ok := r.Context().Value(personaKey).(*Persona)
 	if !ok {
 		respondWithError(
@@ -24,7 +24,7 @@ func (s *Server) HandleUploadObject(w http.ResponseWriter, r *http.Request) {
 	}
 	ufoID := r.PathValue("uuid")
 
-	obj, err := p.db.GetObject(r.Context(), ufoID)
+	obj, err := p.db.GetUFO(r.Context(), ufoID)
 	if err != nil {
 		respondWithError(
 			w, http.StatusInternalServerError,
@@ -34,7 +34,7 @@ func (s *Server) HandleUploadObject(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Check the status to make sure it's valid for upload
-	status := objects.ObjectStatus(obj.UploadStatus)
+	status := objects.UFOStatus(obj.UploadStatus)
 	if status == objects.StatusActive {
 		respondWithError(
 			w, http.StatusBadRequest,
@@ -109,7 +109,7 @@ func (s *Server) HandleUploadObject(w http.ResponseWriter, r *http.Request) {
 		http.StatusOK,
 		api.UploadObjectResponse{
 			ID:     ufoID,
-			Status: objects.ObjectStatus(res.UploadStatus),
+			Status: objects.UFOStatus(res.UploadStatus),
 		},
 	)
 }

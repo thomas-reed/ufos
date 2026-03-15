@@ -9,19 +9,19 @@ import (
 )
 
 type Querier interface {
-	AddObjectTag(ctx context.Context, arg AddObjectTagParams) (string, error)
-	CreateObject(ctx context.Context, arg CreateObjectParams) (CreateObjectRow, error)
-	DeleteObject(ctx context.Context, id string) (DeleteObjectRow, error)
-	DeleteObjectTags(ctx context.Context, objectID string) error
+	AddUFOTag(ctx context.Context, arg AddUFOTagParams) (string, error)
+	CreateUFO(ctx context.Context, arg CreateUFOParams) (CreateUFORow, error)
 	DeleteStaleRequests(ctx context.Context) error
-	GetObject(ctx context.Context, id string) (Object, error)
-	GetObjectsByParent(ctx context.Context, prefixHash string) ([]Object, error)
-	GetObjectsByTag(ctx context.Context, tagHash string) ([]Object, error)
+	DeleteUFO(ctx context.Context, id string) (DeleteUFORow, error)
+	DeleteUFOTags(ctx context.Context, ufoID string) error
 	GetRequestByID(ctx context.Context, id string) (Request, error)
-	GetTagsForObject(ctx context.Context, objectID string) ([]ObjectTag, error)
+	GetTagsForUFO(ctx context.Context, ufoID string) ([]UfoTag, error)
+	GetUFO(ctx context.Context, id string) (Ufo, error)
+	GetUFOsByParent(ctx context.Context, prefixHash string) ([]Ufo, error)
+	GetUFOsByTag(ctx context.Context, tagHash string) ([]Ufo, error)
 	NewRequest(ctx context.Context, id string) error
-	UpdateObject(ctx context.Context, arg UpdateObjectParams) (UpdateObjectRow, error)
 	UpdateStatus(ctx context.Context, arg UpdateStatusParams) (UpdateStatusRow, error)
+	UpdateUFO(ctx context.Context, arg UpdateUFOParams) (UpdateUFORow, error)
 }
 
 var _ Querier = (*Queries)(nil)

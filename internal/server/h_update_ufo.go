@@ -28,7 +28,7 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	params := database.UpdateObjectParams{
+	params := database.UpdateUFOParams{
 		ID:           ufoID,
 		PrefixHash:   sql.NullString{String: req.PrefixHash, Valid: req.PrefixHash != ""},
 		SizeBytes:    sql.NullInt64{Int64: req.SizeBytes, Valid: req.SizeBytes != 0},
@@ -36,7 +36,7 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		UploadStatus: sql.NullString{Valid: false},
 	}
 
-	updated, err := p.db.UpdateObject(r.Context(), params)
+	updated, err := p.db.UpdateUFO(r.Context(), params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "failed to update object", err)
 		return

@@ -35,7 +35,7 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 		status = objects.StatusActive
 	}
 
-	params := database.CreateObjectParams{
+	params := database.CreateUFOParams{
 		ID:           ufoID,
 		PrefixHash:   req.PrefixHash,
 		SizeBytes:    req.SizeBytes,
@@ -43,7 +43,7 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 		Metadata:     req.Metadata,
 	}
 
-	res, err := p.db.CreateObject(r.Context(), params)
+	res, err := p.db.CreateUFO(r.Context(), params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "failed to create object", err)
 		return

@@ -20,7 +20,7 @@ func (s *Server) HandleRemoveUFO(w http.ResponseWriter, r *http.Request) {
 	}
 	ufoID := r.PathValue("uuid")
 
-	deletedRes, err := p.db.DeleteObject(r.Context(), ufoID)
+	deletedRes, err := p.db.DeleteUFO(r.Context(), ufoID)
 	if err != nil {
 		respondWithError(
 			w, http.StatusNotFound,

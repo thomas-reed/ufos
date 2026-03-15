@@ -1,7 +1,7 @@
 -- +goose Up
 
--- The objects table tracks the encrypted files stored on the server.
-CREATE TABLE objects (
+-- Tracks the encrypted files stored on the server.
+CREATE TABLE ufos (
     id TEXT PRIMARY KEY,            -- Unique UUID for the file
     prefix_hash TEXT NOT NULL,      -- Hashed prefix for folder-like navigation
     size_bytes INTEGER NOT NULL,    -- size of file on disk - "folder" will be 0
@@ -11,18 +11,35 @@ CREATE TABLE objects (
     updated_at DATETIME NOT NULL
 ) WITHOUT ROWID;
 
--- The object_tags table allows for searching by many hashed keywords.
-CREATE TABLE object_tags (
-    object_id TEXT NOT NULL,
+-- Allows for searching by many hashed keywords.
+CREATE TABLE ufo_tags (
+    ufo_id TEXT NOT NULL,
     tag_hash TEXT NOT NULL,
-    PRIMARY KEY (object_id, tag_hash),
-    FOREIGN KEY (object_id) REFERENCES objects(id) ON DELETE CASCADE
+    PRIMARY KEY (ufo_id, tag_hash),
+    FOREIGN KEY (ufo_id) REFERENCES objects(id) ON DELETE CASCADE
 ) WITHOUT ROWID;
 
 -- Index for searching specifically by a hashed tag.
 CREATE INDEX idx_tag_hash ON object_tags(tag_hash);
 
--- The requests table provides replay protection for all API calls.
+-- Stores the public keys of trusted acquaintances.
+CREATE TABLE orbit (
+    persona_id TEXT PRIMARY KEY, -- The ID of the friend
+    public_key BLOB NOT NULL,    -- Their Ed25519 public key
+    alias TEXT,                  -- Optional encrypted or plain nickname
+    added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) WITHOUT ROWID;
+
+-- Provides server-side authorization for a given ufo
+CREATE TABLE ufo_access (
+    ufo_id TEXT NOT NULL,
+    persona_id TEXT NOT NULL,
+    PRIMARY KEY (ufo_id, persona_id),
+    FOREIGN KEY (ufo_id) REFERENCES ufos(id) ON DELETE CASCADE,
+    FOREIGN KEY (persona_id) REFERENCES orbit(persona_id) ON DELETE CASCADE
+) WITHOUT ROWID;
+
+-- Provides replay protection for all API calls.
 CREATE TABLE requests (
     id TEXT PRIMARY KEY,               -- Unique Request UUID
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -30,5 +47,6 @@ CREATE TABLE requests (
 
 -- +goose Down
 DROP TABLE requests;
-DROP TABLE object_tags;
-DROP TABLE objects;
+DROP TABLE ufo_access;
+DROP TABLE ufo_tags;
+DROP TABLE ufos;

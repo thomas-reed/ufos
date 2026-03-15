@@ -1,5 +1,5 @@
--- name: CreateObject :one
-INSERT INTO objects (
+-- name: CreateUFO :one
+INSERT INTO ufos (
   id,
   prefix_hash,
   size_bytes,
@@ -19,8 +19,8 @@ VALUES (
 )
 RETURNING id, created_at;
 
--- name: UpdateObject :one
-UPDATE objects
+-- name: UpdateUFO :one
+UPDATE ufos
 SET
   prefix_hash = COALESCE(sqlc.narg('prefix_hash'), prefix_hash),
   size_bytes = COALESCE(sqlc.narg('size_bytes'), size_bytes),
@@ -31,25 +31,25 @@ WHERE id = ?
 RETURNING id, updated_at;
 
 -- name: UpdateStatus :one
-UPDATE objects
+UPDATE ufos
 SET
   upload_status = ?,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING id, upload_status;
 
--- name: GetObject :one
-SELECT * FROM objects WHERE id = ?;
+-- name: GetUFO :one
+SELECT * FROM ufos WHERE id = ?;
 
--- name: GetObjectsByParent :many
-SELECT * FROM objects WHERE prefix_hash = ?;
+-- name: GetUFOsByParent :many
+SELECT * FROM ufos WHERE prefix_hash = ?;
 
--- name: DeleteObject :one
-DELETE FROM objects WHERE id = ?
+-- name: DeleteUFO :one
+DELETE FROM ufos WHERE id = ?
 RETURNING id, size_bytes;
 
--- name: GetObjectsByTag :many
-SELECT objects.*
-FROM objects
-INNER JOIN object_tags ON object_tags.object_id = objects.id
-WHERE object_tags.tag_hash = ?;
+-- name: GetUFOsByTag :many
+SELECT ufos.*
+FROM ufos
+INNER JOIN ufo_tags ON ufo_tags.ufo_id = ufos.id
+WHERE ufo_tags.tag_hash = ?;

@@ -8,6 +8,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/pressly/goose/v3 v3.27.0
 	golang.org/x/crypto v0.48.0
+	golang.org/x/term v0.41.0
 )
 
 require (
@@ -16,5 +17,4 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
-	golang.org/x/term v0.41.0 // indirect
 )

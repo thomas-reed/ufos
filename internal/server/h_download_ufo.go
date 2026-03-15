@@ -24,7 +24,7 @@ func (s *Server) HandleDownloadUFO(w http.ResponseWriter, r *http.Request) {
 	}
 	ufoID := r.PathValue("uuid")
 
-	obj, err := p.db.GetObject(r.Context(), ufoID)
+	obj, err := p.db.GetUFO(r.Context(), ufoID)
 	if err != nil {
 		respondWithError(
 			w, http.StatusNotFound,
@@ -34,7 +34,7 @@ func (s *Server) HandleDownloadUFO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Check the object to make sure it's downloadable
-	if objects.ObjectStatus(obj.UploadStatus) != objects.StatusActive {
+	if objects.UFOStatus(obj.UploadStatus) != objects.StatusActive {
 		respondWithError(
 			w, http.StatusBadRequest,
 			"cannot download non-active object",
