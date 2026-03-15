@@ -9,10 +9,10 @@ import (
 	"golang.org/x/term"
 )
 
-func Init() error {
+func Init(cmd Command) error {
 	fmt.Println("Welcome to UFOs!")
 	fmt.Println("(U)nidentifiable (F)ile/(O)bject (s)torage")
-	fmt.Println();
+	fmt.Println()
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Creating new Vault..")
 	fmt.Print("Enter persona name > ")
@@ -44,6 +44,6 @@ func Init() error {
 	if !bytes.Equal(p, pc) {
 		return fmt.Errorf("Password and password confirmation do not match!")
 	}
-	
+
 	return CreateNewVault(n, url, p)
 }

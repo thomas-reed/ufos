@@ -11,7 +11,6 @@ const (
 
 type Client struct {
 	HTTPClient    *http.Client // for sending the requests
-	VaultPath     string       // location of the local persona data
 	ActivePersona *Persona     // name, baseURL, private key
 	PersonaID     string       // derived from persona's public key and name
 	MasterKey     []byte       // derived from persona's private key and ID for file encryption
@@ -24,9 +23,6 @@ func NewClient() (*Client, error) {
 			Timeout: clientTimeout,
 		},
 	}
-	err := getVaultFilepath()
-	if err != nil {
-		return nil, err
-	}
+
 	return &c, nil
 }

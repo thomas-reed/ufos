@@ -58,22 +58,22 @@ func NewServer() (*Server, error) {
 	}
 
 	if len(s.Registry) == 0 {
-    // Check if the admin provided a seed token
-    token := os.Getenv("UFO_BOOTSTRAP_TOKEN")
-    if token != "" {
-        s.registrationToken = token
-        log.Println("Bootstrap token loaded from environment.")
-    } else {
-        // Fallback: Generate one and PRINT IT
-        token, err := crypto.GenerateKey()
-				if err != nil {
-					log.Fatalf("Error generating registration token: %s", err)
-				}
-        s.registrationToken = base64.StdEncoding.EncodeToString(token)
-				s.tokenCreated = time.Time{}
-        log.Printf("!!! INITIAL BOOTSTRAP TOKEN: %s", s.registrationToken)
-    }
-}
+		// Check if the admin provided a seed token
+		token := os.Getenv("UFO_BOOTSTRAP_TOKEN")
+		if token != "" {
+			s.registrationToken = token
+			log.Println("Bootstrap token loaded from environment.")
+		} else {
+			// Fallback: Generate one and PRINT IT
+			token, err := crypto.GenerateKey()
+			if err != nil {
+				log.Fatalf("Error generating registration token: %s", err)
+			}
+			s.registrationToken = base64.StdEncoding.EncodeToString(token)
+			s.tokenCreated = time.Time{}
+			log.Printf("!!! INITIAL BOOTSTRAP TOKEN: %s", s.registrationToken)
+		}
+	}
 
 	if err := goose.SetDialect("sqlite3"); err != nil {
 		return nil, fmt.Errorf("Error running goose SetDialect: %w", err)

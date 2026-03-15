@@ -88,30 +88,24 @@ func (c *Client) getPersonaFromVaultV1(
 	if err != nil {
 		return fmt.Errorf("Error unmarshalling vault data: %w", err)
 	}
-	// defer func() {
-	// 	for i := range personas {
-	// 		clear(personas[i].PrivateKey)
-	// 	}
-	// }()
+	defer func() {
+		for i := range personas {
+			clear(personas[i].PrivateKey)
+		}
+	}()
 
 	if err = c.resolvePersona(personas, personaName); err != nil {
 		return err
 	}
-	for i := range personas {
-		if c.ActivePersona.Name == personas[i].Name &&
-			c.ActivePersona.BaseURL == personas[i].BaseURL {
-			c.PersonaData.PrivateKey = make([]byte, len(personas[i].PrivateKey))
-			copy(c.PersonaData.PrivateKey, personas[i].PrivateKey)
-			c.PersonaID = crypto.DerivePersonaID(
-				c.PersonaData.PrivateKey.Public().(ed25519.PublicKey),
-				c.PersonaData.Name,
-			)
-			c.MasterKey = crypto.DeriveMasterKey(
-				c.PersonaData.PrivateKey,
-				c.PersonaID,
-			)
-		}
-	}
+	// generate the ID and master key from the retrieved persona
+	c.PersonaID = crypto.DerivePersonaID(
+		c.ActivePersona.PrivateKey.Public().(ed25519.PublicKey),
+		c.ActivePersona.Name,
+	)
+	c.MasterKey = crypto.DeriveMasterKey(
+		c.ActivePersona.PrivateKey,
+		c.PersonaID,
+	)
 	return nil
 }
 
@@ -125,31 +119,33 @@ func (c *Client) resolvePersona(personas []Persona, personaName string) error {
 	if len(parts) == 2 {
 		domain = parts[1]
 	}
-	
+
 	var matches []*Persona
-	for _, persona := range personas {
-		if domain != "" && domain == persona.BaseURL && name == persona.Name {
-			 matches = append(matches, &persona)
-			 break
+	for i := range personas {
+		if domain != "" && domain == personas[i].BaseURL && name == personas[i].Name {
+			matches = append(matches, &personas[i])
+			break
 		}
-		if domain == "" && name == persona.Name {
-			matches = append(matches, &persona)
+		if domain == "" && name == personas[i].Name {
+			matches = append(matches, &personas[i])
 			continue
 		}
-		clear(persona.PrivateKey)
 	}
 
 	switch len(matches) {
 	case 0:
 		return fmt.Errorf("Persona '%s' not found", name)
 	case 1:
-		c.ActivePersona = matches[0]
+		c.ActivePersona = &Persona{}
+		c.ActivePersona.Name = matches[0].Name
+		c.ActivePersona.BaseURL = matches[0].BaseURL
+		c.ActivePersona.PrivateKey = make([]byte, len(matches[0].PrivateKey))
+		copy(c.ActivePersona.PrivateKey, matches[0].PrivateKey)
 		return nil
 	default: // matches more than 1
 		var domains []string
 		for _, p := range matches {
 			domains = append(domains, p.BaseURL)
-			clear(p.PrivateKey)
 		}
 		return fmt.Errorf(
 			"Use '%s@<domain>' - multiple domains found: %q",
@@ -170,7 +166,7 @@ func (c *Client) AddPersonaToVault(
 
 	switch v.Version {
 	case VaultV1:
-		if err = c.addPersonaToVaultV1(personaName, baseURL, password); err != nil {
+		if err = c.addPersonaToVaultV1(v, personaName, baseURL, password); err != nil {
 			return err
 		}
 
@@ -181,12 +177,10 @@ func (c *Client) AddPersonaToVault(
 }
 
 func (c *Client) addPersonaToVaultV1(
+	v *Vault,
 	personaName, baseURL string,
-	password []byte) error {
-	v, err := loadVault()
-	if err != nil {
-		return err
-	}
+	password []byte,
+) error {
 	vaultKey, err := crypto.DeriveVaultKey(
 		password,
 		v.KDFSalt,
@@ -215,14 +209,14 @@ func (c *Client) addPersonaToVaultV1(
 	var persona Persona
 	for _, p := range personas {
 		if p.BaseURL == baseURL {
-			persona.Name = c.ActivePersona.Name
+			persona.Name = personaName
 			persona.BaseURL = baseURL
-			persona.PrivateKey = make([]byte, len(personas[i].PrivateKey))
-			copy(persona.PrivateKey, personas[i].PrivateKey)
+			persona.PrivateKey = make([]byte, len(p.PrivateKey))
+			copy(persona.PrivateKey, p.PrivateKey)
 		}
 	}
 	if persona.PrivateKey == nil {
-		persona, err = buildPersona(c.ActivePersona.Name, baseURL)
+		persona, err = buildPersona(personaName, baseURL)
 		if err != nil {
 			return err
 		}

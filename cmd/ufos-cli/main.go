@@ -19,7 +19,7 @@ func main() {
 	cmds := client.Commands{
 		Registry: make(map[string]func(cmd client.Command) error),
 	}
-	cmds.Register("something", c.handleSomething)
+	cmds.Register("Init", client.Init)
 
 	// parse cmd line arguments
 	if len(os.Args) < 2 {
@@ -33,5 +33,5 @@ func main() {
 		log.Fatalf("Error running %s command: %s\n", cmdName, err)
 	}
 
-	os.Exit(0);
+	os.Exit(0)
 }

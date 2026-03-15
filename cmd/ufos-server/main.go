@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"net/http"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -32,12 +32,12 @@ func main() {
 	go s.StartJanitor(ctx)
 
 	go func() {
-    log.Printf("Server listening on port: %s\n", s.Port)
-    if err := s.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-        log.Fatalf("Server error: %v", err)
-    }
+		log.Printf("Server listening on port: %s\n", s.Port)
+		if err := s.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("Server error: %v", err)
+		}
 	}()
-	
+
 	// WAIT for the signal to shutdown
 	<-ctx.Done()
 
@@ -50,9 +50,9 @@ func main() {
 	defer shutdownCancel()
 
 	if err := s.HTTPServer.Shutdown(shutdownCtx); err != nil {
-			log.Fatalf("Graceful shutdown failed: %v", err)
+		log.Fatalf("Graceful shutdown failed: %v", err)
 	}
-	
+
 	log.Println("Waiting for background tasks to finish...")
 	s.WG.Wait()
 

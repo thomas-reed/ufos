@@ -18,13 +18,13 @@ func (s *Server) StartJanitor(ctx context.Context) {
 			// Clean up expired registration token
 			s.mu.Lock()
 			// Check the registration token is populated, has expired, and is not the bootstrap token
-			if s.registrationToken != "" && time.Since(s.tokenCreated) > tokenLifetime && !s.tokenCreated.IsZero(){
+			if s.registrationToken != "" && time.Since(s.tokenCreated) > tokenLifetime && !s.tokenCreated.IsZero() {
 				s.registrationToken = ""
 				s.tokenCreated = time.Time{}
 				log.Println("Janitor: Cleared expired registration token.")
 			}
 			s.mu.Unlock()
-			
+
 			// Clean up requests tables in each persona db
 			s.mu.RLock()
 			for _, p := range s.Registry {
