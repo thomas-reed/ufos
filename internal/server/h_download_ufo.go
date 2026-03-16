@@ -24,25 +24,25 @@ func (s *Server) HandleDownloadUFO(w http.ResponseWriter, r *http.Request) {
 	}
 	ufoID := r.PathValue("uuid")
 
-	obj, err := p.db.GetUFO(r.Context(), ufoID)
+	ufo, err := p.db.GetUFO(r.Context(), ufoID)
 	if err != nil {
 		respondWithError(
 			w, http.StatusNotFound,
-			"couldn't retrieve object from db",
+			"couldn't retrieve ufo from db",
 			err,
 		)
 		return
 	}
 	// Check the object to make sure it's downloadable
-	if objects.UFOStatus(obj.UploadStatus) != objects.StatusActive {
+	if objects.UFOStatus(ufo.UploadStatus) != objects.StatusActive {
 		respondWithError(
 			w, http.StatusBadRequest,
-			"cannot download non-active object",
+			"cannot download non-active ufo",
 			nil,
 		)
 		return
 	}
-	if obj.SizeBytes < 0 {
+	if ufo.SizeBytes < 0 {
 		respondWithError(
 			w, http.StatusBadRequest,
 			"cannot download folder objects",
@@ -65,8 +65,8 @@ func (s *Server) HandleDownloadUFO(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	// Construct headers
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", obj.SizeBytes))
-	w.Header().Set("X-UFO-Metadata", base64.StdEncoding.EncodeToString(obj.Metadata))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", ufo.SizeBytes))
+	w.Header().Set("X-UFO-Metadata", base64.StdEncoding.EncodeToString(ufo.Metadata))
 
 	// Read file and stream
 	_, err = io.Copy(w, file)

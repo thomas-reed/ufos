@@ -28,7 +28,7 @@ func (s *Server) HandleUploadUFO(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondWithError(
 			w, http.StatusInternalServerError,
-			"couldn't retrieve object from db",
+			"couldn't retrieve ufo from db",
 			err,
 		)
 		return
@@ -38,7 +38,7 @@ func (s *Server) HandleUploadUFO(w http.ResponseWriter, r *http.Request) {
 	if status == objects.StatusActive {
 		respondWithError(
 			w, http.StatusBadRequest,
-			"cannot overwrite and active object",
+			"cannot overwrite and active ufo",
 			nil,
 		)
 		return

@@ -45,7 +45,7 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 
 	res, err := p.db.CreateUFO(r.Context(), params)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to create object", err)
+		respondWithError(w, http.StatusInternalServerError, "failed to create ufo", err)
 		return
 	}
 	jsonResponse(w, http.StatusCreated, api.CreateUFOResponse{

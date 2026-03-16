@@ -9,17 +9,25 @@ import (
 )
 
 type Querier interface {
+	AddUFOAccess(ctx context.Context, arg AddUFOAccessParams) (string, error)
 	AddUFOTag(ctx context.Context, arg AddUFOTagParams) (string, error)
+	CreateOrbit(ctx context.Context, arg CreateOrbitParams) (CreateOrbitRow, error)
 	CreateUFO(ctx context.Context, arg CreateUFOParams) (CreateUFORow, error)
+	DeleteOrbit(ctx context.Context, personaID string) (string, error)
 	DeleteStaleRequests(ctx context.Context) error
 	DeleteUFO(ctx context.Context, id string) (DeleteUFORow, error)
+	DeleteUFOAccess(ctx context.Context, personaID string) error
 	DeleteUFOTags(ctx context.Context, ufoID string) error
+	GetOrbit(ctx context.Context, personaID string) (Orbit, error)
 	GetRequestByID(ctx context.Context, id string) (Request, error)
 	GetTagsForUFO(ctx context.Context, ufoID string) ([]UfoTag, error)
 	GetUFO(ctx context.Context, id string) (Ufo, error)
+	GetUFOAccessForUser(ctx context.Context, arg GetUFOAccessForUserParams) (int64, error)
 	GetUFOsByParent(ctx context.Context, prefixHash string) ([]Ufo, error)
 	GetUFOsByTag(ctx context.Context, tagHash string) ([]Ufo, error)
+	GetUsersForUFO(ctx context.Context, ufoID string) ([]UfoAccess, error)
 	NewRequest(ctx context.Context, id string) error
+	UpdateOrbitMetadata(ctx context.Context, arg UpdateOrbitMetadataParams) (UpdateOrbitMetadataRow, error)
 	UpdateStatus(ctx context.Context, arg UpdateStatusParams) (UpdateStatusRow, error)
 	UpdateUFO(ctx context.Context, arg UpdateUFOParams) (UpdateUFORow, error)
 }

@@ -24,7 +24,7 @@ func (s *Server) HandleRemoveUFO(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		respondWithError(
 			w, http.StatusNotFound,
-			"couldn't find object in db",
+			"couldn't find ufo in db",
 			err,
 		)
 		return

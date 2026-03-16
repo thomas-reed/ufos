@@ -38,7 +38,7 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 
 	updated, err := p.db.UpdateUFO(r.Context(), params)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to update object", err)
+		respondWithError(w, http.StatusInternalServerError, "failed to update ufo", err)
 		return
 	}
 

@@ -18,9 +18,9 @@ type ObjectMetadata struct {
 	Name        string        `json:"name"`         // "original_filename.ext"
 	ContentType string        `json:"content_type"` // "image/jpeg"
 	Prefix      string        `json:"prefix"`       // "Path" to file
+	SizeBytes   uint64        `json:"size_bytes"`   // Filesize in bytes
 	AccessList  []AccessEntry `json:"access_list"`  // Wrapped keys for sharing
 	Tags        []string      `json:"tags"`         // Human-readable tags
-	SizeBytes   uint64        `json:"size_bytes"`   // Filesize in bytes
 }
 
 type AccessEntry struct {

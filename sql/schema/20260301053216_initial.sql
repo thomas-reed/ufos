@@ -26,8 +26,9 @@ CREATE INDEX idx_tag_hash ON object_tags(tag_hash);
 CREATE TABLE orbit (
     persona_id TEXT PRIMARY KEY, -- The ID of the friend
     public_key BLOB NOT NULL,    -- Their Ed25519 public key
-    alias TEXT,                  -- Optional encrypted or plain nickname
-    added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    metadata BLOB,               -- Optional encrypted info about user
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL
 ) WITHOUT ROWID;
 
 -- Provides server-side authorization for a given ufo
