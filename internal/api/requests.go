@@ -8,7 +8,7 @@ type UFOMetadataRequest struct {
 	SizeBytes  int64    `json:"size_bytes"`
 	Metadata   []byte   `json:"metadata"`
 	AccessList []string `json:"access_list"`
-	Tags       []string `json:"tags"`
+	TagHashes  []string `json:"tag_hashes"`
 }
 
 // for use with CreatePersona

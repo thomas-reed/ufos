@@ -67,7 +67,7 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	for _, tag := range req.Tags {
+	for _, tag := range req.TagHashes {
 		_, err := qtx.AddUFOTag(r.Context(), database.AddUFOTagParams{
 			UfoID:   updated.ID,
 			TagHash: tag,

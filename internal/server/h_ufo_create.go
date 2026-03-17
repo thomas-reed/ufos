@@ -64,7 +64,7 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add new tag hash references to ufo
-	for _, tag := range req.Tags {
+	for _, tag := range req.TagHashes {
 		_, err := qtx.AddUFOTag(r.Context(), database.AddUFOTagParams{
 			UfoID:   res.ID,
 			TagHash: tag,
