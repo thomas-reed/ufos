@@ -1,4 +1,4 @@
--- name: CreateOrbit :one
+-- name: AddToOrbit :one
 INSERT INTO orbit (
   persona_id,
   public_key,
@@ -23,9 +23,12 @@ SET
 WHERE persona_id = ?
 RETURNING persona_id, updated_at;
 
+-- name: GetOrbitList :many
+SELECT * FROM orbit;
+
 -- name: GetOrbit :one
 SELECT * FROM orbit WHERE persona_id = ?;
 
--- name: DeleteOrbit :one
+-- name: DeleteFromOrbit :one
 DELETE FROM orbit WHERE persona_id = ?
 RETURNING persona_id;

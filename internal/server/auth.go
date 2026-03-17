@@ -86,7 +86,7 @@ func (s *Server) Authenticate(requiresBodyHash bool) func(http.Handler) http.Han
 					respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
 					return
 				}
-				// guest is now authorized, merge guest and host info into persona object for hash check
+				// Guest is now authorized, merge guest and host info into persona object for hash check
 				personaData, err := host.db.GetOrbit(r.Context(), personaID)
 				if err != nil {
 					respondWithError(
@@ -98,12 +98,12 @@ func (s *Server) Authenticate(requiresBodyHash bool) func(http.Handler) http.Han
 					return
 				}
 				persona = &Persona{
-					ID: personaData.PersonaID,
+					ID:        personaData.PersonaID,
 					PublicKey: personaData.PublicKey,
-					RootFS: host.RootFS,
-					DBPath: host.DBPath,
-					DBConn: host.DBConn,
-					db: host.db,
+					RootFS:    host.RootFS,
+					DBPath:    host.DBPath,
+					DBConn:    host.DBConn,
+					db:        host.db,
 				}
 			}
 

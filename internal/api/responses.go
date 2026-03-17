@@ -1,6 +1,7 @@
 package api
 
 import (
+	"crypto/ed25519"
 	"time"
 
 	"github.com/thomas-reed/ufos/internal/objects"
@@ -17,19 +18,19 @@ type UpdateUFOResponse struct {
 }
 
 type UploadObjectResponse struct {
-	ID     string               `json:"id"`
+	ID     string            `json:"id"`
 	Status objects.UFOStatus `json:"status"`
 }
 
 // List, Search return a []UFOItem
 type UFOItem struct {
-	ID         string               `json:"id"`
-	PrefixHash string               `json:"prefix_hash"`
-	SizeBytes  int64                `json:"size_bytes"`
+	ID         string            `json:"id"`
+	PrefixHash string            `json:"prefix_hash"`
+	SizeBytes  int64             `json:"size_bytes"`
 	Status     objects.UFOStatus `json:"status"`
-	Metadata   []byte               `json:"metadata"`
-	CreatedAt  time.Time            `json:"created_at"`
-	UpdatedAt  time.Time            `json:"updated_at"`
+	Metadata   []byte            `json:"metadata"`
+	CreatedAt  time.Time         `json:"created_at"`
+	UpdatedAt  time.Time         `json:"updated_at"`
 }
 
 type InitPersonaResponse struct {
@@ -38,4 +39,17 @@ type InitPersonaResponse struct {
 
 type CreatePersonaResponse struct {
 	ID string `json:"ID"`
+}
+
+type OrbitItem struct {
+	PersonaID string            `json:"persona_id"`
+	PublicKey ed25519.PublicKey `json:"public_key"`
+	Metadata  []byte            `json:"metadata"`
+	CreatedAt time.Time         `json:"created_at"`
+	UpdatedAt time.Time         `json:"updated_at"`
+}
+
+type AddToOrbitResponse struct {
+	PersonaID string    `json:"persona_id"`
+	CreatedAt time.Time `json:"created_at"`
 }

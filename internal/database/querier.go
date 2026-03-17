@@ -9,16 +9,17 @@ import (
 )
 
 type Querier interface {
+	AddToOrbit(ctx context.Context, arg AddToOrbitParams) (AddToOrbitRow, error)
 	AddUFOAccess(ctx context.Context, arg AddUFOAccessParams) (string, error)
 	AddUFOTag(ctx context.Context, arg AddUFOTagParams) (string, error)
-	CreateOrbit(ctx context.Context, arg CreateOrbitParams) (CreateOrbitRow, error)
 	CreateUFO(ctx context.Context, arg CreateUFOParams) (CreateUFORow, error)
-	DeleteOrbit(ctx context.Context, personaID string) (string, error)
+	DeleteFromOrbit(ctx context.Context, personaID string) (string, error)
 	DeleteStaleRequests(ctx context.Context) error
 	DeleteUFO(ctx context.Context, id string) (DeleteUFORow, error)
 	DeleteUFOAccess(ctx context.Context, personaID string) error
 	DeleteUFOTags(ctx context.Context, ufoID string) error
 	GetOrbit(ctx context.Context, personaID string) (Orbit, error)
+	GetOrbitList(ctx context.Context) ([]Orbit, error)
 	GetRequestByID(ctx context.Context, id string) (Request, error)
 	GetTagsForUFO(ctx context.Context, ufoID string) ([]UfoTag, error)
 	GetUFO(ctx context.Context, id string) (Ufo, error)

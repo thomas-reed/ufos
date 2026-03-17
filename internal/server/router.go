@@ -20,6 +20,9 @@ func (s *Server) Router() *http.ServeMux {
 	mux.Handle("PATCH /api/ufos/{uuid}", authHash(http.HandlerFunc(s.HandleUpdateUFO)))
 	mux.Handle("DELETE /api/ufos/{uuid}", authHash(http.HandlerFunc(s.HandleRemoveUFO)))
 	mux.Handle("GET /api/tags", authHash(http.HandlerFunc(s.HandleSearch)))
+	mux.Handle("POST /api/orbit", authHash(http.HandlerFunc(s.HandleAddToOrbit)))
+	mux.Handle("GET /api/orbit", authHash(http.HandlerFunc(s.HandleOrbitList)))
+	mux.Handle("DELETE /api/orbit/{id}", authHash(http.HandlerFunc(s.HandleRemoveFromOrbit)))
 	// Auth does not require body hash
 	mux.Handle("PUT /api/ufos/{uuid}", authNoHash(http.HandlerFunc(s.HandleUploadUFO)))
 

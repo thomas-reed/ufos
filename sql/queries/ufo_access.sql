@@ -1,5 +1,5 @@
 -- name: AddUFOAccess :one
-INSERT INTO ufo_access (ufo_id, persona_id)
+INSERT OR IGNORE INTO ufo_access (ufo_id, persona_id)
 VALUES (
   ?,
   ?
@@ -7,7 +7,7 @@ VALUES (
 RETURNING ufo_id;
 
 -- name: DeleteUFOAccess :exec
-DELETE FROM ufo_access WHERE persona_id = ?;
+DELETE FROM ufo_access WHERE ufo_id = ?;
 
 -- name: GetUsersForUFO :many
 SELECT * FROM ufo_access WHERE ufo_id = ?;

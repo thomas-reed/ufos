@@ -42,12 +42,72 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 		UploadStatus: string(status),
 		Metadata:     req.Metadata,
 	}
+	// Set up db transaction
+	tx, err := p.DBConn.BeginTx(r.Context(), nil)
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"db transaction setup failed",
+			err,
+		)
+		return
+	}
+	defer tx.Rollback()
+	qtx := p.db.WithTx(tx)
 
-	res, err := p.db.CreateUFO(r.Context(), params)
+	// Create with the transaction
+	res, err := qtx.CreateUFO(r.Context(), params)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "failed to create ufo", err)
 		return
 	}
+
+	// Add new tag hash references to ufo
+	for _, tag := range req.Tags {
+		_, err := qtx.AddUFOTag(r.Context(), database.AddUFOTagParams{
+			UfoID:   res.ID,
+			TagHash: tag,
+		})
+		if err != nil {
+			respondWithError(
+				w,
+				http.StatusInternalServerError,
+				"failed to create ufo tag",
+				err,
+			)
+			return
+		}
+	}
+
+	// Add any personas to the Access List
+	for _, recipient := range req.AccessList {
+		if _, err := qtx.AddUFOAccess(r.Context(), database.AddUFOAccessParams{
+			UfoID:     res.ID,
+			PersonaID: recipient,
+		}); err != nil {
+			respondWithError(
+				w,
+				http.StatusInternalServerError,
+				"failed to add permission",
+				err,
+			)
+			return
+		}
+	}
+
+	// Submit transaction
+	err = tx.Commit()
+	if err != nil {
+		respondWithError(
+			w,
+			http.StatusInternalServerError,
+			"db transaction failed",
+			err,
+		)
+		return
+	}
+
 	jsonResponse(w, http.StatusCreated, api.CreateUFOResponse{
 		ID:        res.ID,
 		CreatedAt: res.CreatedAt,

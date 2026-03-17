@@ -80,7 +80,7 @@ func NewServer() (*Server, error) {
 	}
 
 	for _, persona := range s.Registry {
-		dbConn, err := sql.Open("sqlite3", persona.DBPath)
+		dbConn, err := sql.Open("sqlite3", persona.DBPath+"?_foreign_keys=on")
 		if err != nil {
 			return nil, fmt.Errorf("Could not open db for %s: %w", persona.ID, err)
 		}

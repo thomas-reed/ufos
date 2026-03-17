@@ -47,7 +47,7 @@ func (s *Server) HandleCreatePersona(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dbPath := filepath.Join(s.dataPath, req.ID, "ufos.db")
-	dbConn, err := sql.Open("sqlite3", dbPath)
+	dbConn, err := sql.Open("sqlite3", dbPath+"?_foreign_keys=on")
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Error opening DB", err)
 		return

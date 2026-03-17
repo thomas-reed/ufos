@@ -17,4 +17,8 @@ type NewPersonaRequest struct {
 	PublicKey ed25519.PublicKey `json:"public_key"`
 }
 
-
+type OrbitMetadataRequest struct {
+	PersonaID string            `json:"persona_id"`
+	PublicKey ed25519.PublicKey `json:"public_key"`
+	Metadata  []byte            `json:"metadata"`
+}

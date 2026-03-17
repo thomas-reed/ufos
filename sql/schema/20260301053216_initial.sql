@@ -16,11 +16,11 @@ CREATE TABLE ufo_tags (
     ufo_id TEXT NOT NULL,
     tag_hash TEXT NOT NULL,
     PRIMARY KEY (ufo_id, tag_hash),
-    FOREIGN KEY (ufo_id) REFERENCES objects(id) ON DELETE CASCADE
+    FOREIGN KEY (ufo_id) REFERENCES ufos(id) ON DELETE CASCADE
 ) WITHOUT ROWID;
 
 -- Index for searching specifically by a hashed tag.
-CREATE INDEX idx_tag_hash ON object_tags(tag_hash);
+CREATE INDEX idx_tag_hash ON ufo_tags(tag_hash);
 
 -- Stores the public keys of trusted acquaintances.
 CREATE TABLE orbit (

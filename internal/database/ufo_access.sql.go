@@ -10,7 +10,7 @@ import (
 )
 
 const addUFOAccess = `-- name: AddUFOAccess :one
-INSERT INTO ufo_access (ufo_id, persona_id)
+INSERT OR IGNORE INTO ufo_access (ufo_id, persona_id)
 VALUES (
   ?,
   ?

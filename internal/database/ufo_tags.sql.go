@@ -10,7 +10,7 @@ import (
 )
 
 const addUFOTag = `-- name: AddUFOTag :one
-INSERT INTO ufo_tags (ufo_id, tag_hash)
+INSERT OR IGNORE INTO ufo_tags (ufo_id, tag_hash)
 VALUES (
   ?,
   ?

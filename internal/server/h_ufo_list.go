@@ -40,7 +40,7 @@ func (s *Server) HandleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var ufoList []api.UFOItem
+	ufoList := make([]api.UFOItem, 0, len(list))
 	for i := range list {
 		ufoList = append(ufoList, api.UFOItem{
 			ID:         list[i].ID,

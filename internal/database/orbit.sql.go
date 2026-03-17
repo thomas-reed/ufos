@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const createOrbit = `-- name: CreateOrbit :one
+const addToOrbit = `-- name: AddToOrbit :one
 INSERT INTO orbit (
   persona_id,
   public_key,
@@ -28,31 +28,31 @@ VALUES (
 RETURNING persona_id, created_at
 `
 
-type CreateOrbitParams struct {
+type AddToOrbitParams struct {
 	PersonaID string `json:"persona_id"`
 	PublicKey []byte `json:"public_key"`
 	Metadata  []byte `json:"metadata"`
 }
 
-type CreateOrbitRow struct {
+type AddToOrbitRow struct {
 	PersonaID string    `json:"persona_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func (q *Queries) CreateOrbit(ctx context.Context, arg CreateOrbitParams) (CreateOrbitRow, error) {
-	row := q.db.QueryRowContext(ctx, createOrbit, arg.PersonaID, arg.PublicKey, arg.Metadata)
-	var i CreateOrbitRow
+func (q *Queries) AddToOrbit(ctx context.Context, arg AddToOrbitParams) (AddToOrbitRow, error) {
+	row := q.db.QueryRowContext(ctx, addToOrbit, arg.PersonaID, arg.PublicKey, arg.Metadata)
+	var i AddToOrbitRow
 	err := row.Scan(&i.PersonaID, &i.CreatedAt)
 	return i, err
 }
 
-const deleteOrbit = `-- name: DeleteOrbit :one
+const deleteFromOrbit = `-- name: DeleteFromOrbit :one
 DELETE FROM orbit WHERE persona_id = ?
 RETURNING persona_id
 `
 
-func (q *Queries) DeleteOrbit(ctx context.Context, personaID string) (string, error) {
-	row := q.db.QueryRowContext(ctx, deleteOrbit, personaID)
+func (q *Queries) DeleteFromOrbit(ctx context.Context, personaID string) (string, error) {
+	row := q.db.QueryRowContext(ctx, deleteFromOrbit, personaID)
 	var persona_id string
 	err := row.Scan(&persona_id)
 	return persona_id, err
@@ -73,6 +73,39 @@ func (q *Queries) GetOrbit(ctx context.Context, personaID string) (Orbit, error)
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const getOrbitList = `-- name: GetOrbitList :many
+SELECT persona_id, public_key, metadata, created_at, updated_at FROM orbit
+`
+
+func (q *Queries) GetOrbitList(ctx context.Context) ([]Orbit, error) {
+	rows, err := q.db.QueryContext(ctx, getOrbitList)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Orbit
+	for rows.Next() {
+		var i Orbit
+		if err := rows.Scan(
+			&i.PersonaID,
+			&i.PublicKey,
+			&i.Metadata,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const updateOrbitMetadata = `-- name: UpdateOrbitMetadata :one
