@@ -14,7 +14,7 @@ import (
 )
 
 func (s *Server) HandleCreatePersona(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("X-UFO-Registration")
+	token := r.Header.Get(api.HeaderRegistration)
 
 	s.mu.RLock()
 	validToken := s.registrationToken != "" && s.registrationToken == token

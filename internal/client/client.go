@@ -7,6 +7,7 @@ import (
 
 const (
 	clientTimeout = 10 * time.Second
+	ServerScheme  = "http://" // just for now (dev) - need to figure out letsEncrypt certs
 )
 
 type Client struct {

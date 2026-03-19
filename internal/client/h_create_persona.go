@@ -1,34 +1,140 @@
 package client
 
 import (
+	"bufio"
+	"bytes"
+	"crypto/ed25519"
+	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"strings"
+
+	"github.com/thomas-reed/ufos/internal/api"
+	"golang.org/x/term"
 )
 
 func (c *Client) HandleCreatePersona(cmd Command) error {
-	// 1. Context Gathering:
-	//    - Prompt for Master Passphrase.
-	//    - Load the Vault and find the matching Persona (Name + URL).
-	//    - If not found, return an error.
+	// Set up flags and parse
+	fs := flag.NewFlagSet("register", flag.ContinueOnError)
 
-	// 2. The Spore Token:
-	//    - Prompt the user: "Enter Registration Token > "
-	//    - Read from stdin (no need for hidden term input).
+	name := fs.String("name", "", "The name of the persona to register")
+	fs.StringVar(name, "n", "", "alias for --name")
+	token := fs.String("token", "", "The registration token from running the 'new' command, (or getting the Initial Bootstrap Token from server logs)")
+	fs.StringVar(token, "t", "", "alias for --token")
+	if err := fs.Parse(cmd.Args); err != nil {
+		return err
+	}
 
-	// 3. Network Preparation:
-	//    - Construct api.NewPersonaRequest{ ID, PublicKey }.
-	//    - Marshal the request to JSON.
+	// If name wasn't in Args, prompt
+	if *name == "" {
+		scanner := bufio.NewScanner(os.Stdin)
+		fmt.Print("Enter desired persona name > ")
+		if !scanner.Scan() {
+			return fmt.Errorf("Input interrupted!")
+		}
+		n := scanner.Text()
+		name = &n
+	}
+	// get Domain from name, or prompt
+	splitName := strings.Split(*name, "@")
+	domain := ""
+	switch len(splitName) {
+	case 1:
+		scanner := bufio.NewScanner(os.Stdin)
+		fmt.Print("Enter your desired UFOs domain > ")
+		if !scanner.Scan() {
+			return fmt.Errorf("Input interrupted!")
+		}
+		domain = scanner.Text()
+	case 2:
+		domain = splitName[1]
+	default:
+		return fmt.Errorf("Error parsing domain from given name")
+	}
 
-	// 4. The Transmission:
-	//    - Perform a POST to <baseURL>/api/personas.
-	//    - Set Header "X-UFO-Registration" with the token.
-	//    - Execute the request using c.HTTPClient.
+	// if token wasn't in Args, prompt
+	if *token == "" {
+		scanner := bufio.NewScanner(os.Stdin)
+		fmt.Print("Enter registration token > ")
+		if !scanner.Scan() {
+			return fmt.Errorf("Input interrupted!")
+		}
+		t := scanner.Text()
+		token = &t
+	}
 
-	// 5. Memory Ritual:
-	//    - Immediately defer clear() on the passphrase.
-	//    - Immediately defer clear() on the Persona's private key.
+	// get master password to decrypt vault
+	fmt.Printf("Enter master password: ")
+	pw, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return fmt.Errorf("Error reading password: %w", err)
+	}
+	defer clear(pw)
 
-	// 6. Response Handling:
-	//    - If 201 Created: Print "Successfully registered [PersonaID] on [URL]!"
-	//    - If 401 Unauthorized: Print "Registration failed: Invalid or expired token."
-	//    - If 409 Conflict: Print "Registration failed: Persona already exists."
+	// Check to see if the persona exists in the vault (making this a retry registration)
+	err = c.GetPersonaFromVault(*name, pw)
+	if errors.Is(err, ErrPersonaNotFound) {
+		// In case of an error, create the new persona and load it into the client
+		err = c.AddPersonaToVault(*name, domain, pw)
+		if err != nil {
+			return fmt.Errorf("Error writing new persona to vault: %s", err)
+		}
+		err = c.GetPersonaFromVault(*name, pw)
+		if err != nil {
+			return fmt.Errorf("Error retrieving new persona from vault: %s", err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("Error getting persona from vault: %w", err)
+	}
+
+	data, err := json.Marshal(api.NewPersonaRequest{
+		ID:        c.PersonaID,
+		PublicKey: c.ActivePersona.PrivateKey.Public().(ed25519.PublicKey),
+	})
+	body := bytes.NewReader(data)
+	url := domain + api.RouteRegister
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		url = ServerScheme + url
+	}
+
+	req, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return fmt.Errorf("Error creating request %s", err)
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add(api.HeaderRegistration, *token)
+
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("Error executing request %s", err)
+	}
+	defer res.Body.Close()
+
+	// Possible responses
+	switch res.StatusCode {
+	case http.StatusUnauthorized:
+		return fmt.Errorf("Server registration failed, check token and retry registration.")
+	case http.StatusConflict:
+		fmt.Println("Persona was already registered on server. Local vault is now in sync.")
+	case http.StatusCreated:
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return fmt.Errorf("Error reading response body: %s", err)
+		}
+		personaRes := api.CreatePersonaResponse{}
+		if err := json.Unmarshal(body, &personaRes); err != nil {
+			return fmt.Errorf("Error unmarshalling json body: %s", err)
+		}
+		if personaRes.ID == c.PersonaID {
+			fmt.Printf("Persona '%s' has been registered on %s", personaRes.ID, domain)
+		}
+	default:
+		return fmt.Errorf("Unexpected response status: %d", res.StatusCode)
+	}
+	return nil
 }

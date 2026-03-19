@@ -47,6 +47,8 @@ type KDF struct {
 	Parallelism uint8  `json:"parallelism"`
 }
 
+var ErrPersonaNotFound = errors.New("Persona not found")
+
 func (c *Client) GetPersonaFromVault(personaName string, password []byte) error {
 	v, err := loadVault()
 	if err != nil {
@@ -134,7 +136,7 @@ func (c *Client) resolvePersona(personas []Persona, personaName string) error {
 
 	switch len(matches) {
 	case 0:
-		return fmt.Errorf("Persona '%s' not found", name)
+		return ErrPersonaNotFound
 	case 1:
 		c.ActivePersona = &Persona{}
 		c.ActivePersona.Name = matches[0].Name
@@ -224,6 +226,78 @@ func (c *Client) addPersonaToVaultV1(
 	defer clear(persona.PrivateKey)
 
 	payload, err := json.Marshal(append(personas, persona))
+
+	v.Payload, err = crypto.Encrypt(vaultKey, payload, crypto.CryptoSuiteV1)
+	if err != nil {
+		return fmt.Errorf("Error encrypting persona payload: %w", err)
+	}
+
+	return saveVault(v)
+}
+
+func (c *Client) RemovePersonaFromVault(personaName, baseURL string, password []byte) error {
+	v, err := loadVault()
+	if err != nil {
+		return err
+	}
+	switch v.Version {
+	case VaultV1:
+		if err = c.removePersonaFromVaultV1(v, personaName, baseURL, password); err != nil {
+			return err
+		}
+
+	default:
+		return fmt.Errorf("Invalid vault version")
+	}
+	return nil
+}
+
+func (c *Client) removePersonaFromVaultV1(
+	v *Vault,
+	personaName, baseURL string,
+	password []byte,
+) error {
+	vaultKey, err := crypto.DeriveVaultKey(
+		password,
+		v.KDFSalt,
+		v.KDFParams.TimeCost,
+		v.KDFParams.MemoryCost,
+		v.KDFParams.Parallelism,
+	)
+	defer clear(vaultKey)
+	data, err := crypto.Decrypt(vaultKey, v.Payload)
+	if err != nil {
+		return err
+	}
+	defer clear(data)
+
+	var personas []Persona
+	err = json.Unmarshal(data, &personas)
+	if err != nil {
+		return fmt.Errorf("Error unmarshalling vault data: %w", err)
+	}
+	defer func() {
+		for i := range personas {
+			clear(personas[i].PrivateKey)
+		}
+	}()
+
+	// Filter out the persona to remove
+	newPersonas := make([]Persona, 0, len(personas))
+	for i := range personas {
+		defer clear(personas[i].PrivateKey)
+		if personas[i].Name == personaName && personas[i].BaseURL == baseURL {
+			continue
+		}
+		newPersonas = append(newPersonas, personas[i])
+	}
+	defer func() {
+		for i := range newPersonas {
+			clear(newPersonas[i].PrivateKey)
+		}
+	}()
+
+	payload, err := json.Marshal(newPersonas)
 
 	v.Payload, err = crypto.Encrypt(vaultKey, payload, crypto.CryptoSuiteV1)
 	if err != nil {

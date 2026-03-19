@@ -2,6 +2,21 @@ package api
 
 import "crypto/ed25519"
 
+const (
+	RouteHealth   = "/healthz"
+	RouteInit     = "/api/init"
+	RouteRegister = "/api/personas"
+	RouteUFOs     = "/api/ufos"
+	RouteOrbit    = "api/orbit"
+	RouteSearch   = "api/tags"
+
+	HeaderRegistration = "X-UFO-Registration"
+	HeaderTimestamp    = "X-UFO-Timestamp"
+	HeaderPersona      = "X-UFO-Persona"
+	HeaderHost         = "X-UFO-Host"
+	HeaderSignature    = "X-UFO-Signature"
+)
+
 // for use with CreateUFO, UpdateUFO
 type UFOMetadataRequest struct {
 	PrefixHash string   `json:"prefix_hash"`

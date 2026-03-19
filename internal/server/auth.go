@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/thomas-reed/ufos/internal/api"
 	"github.com/thomas-reed/ufos/internal/crypto"
 	"github.com/thomas-reed/ufos/internal/database"
 )
@@ -24,7 +25,7 @@ func (s *Server) Authenticate(requiresBodyHash bool) func(http.Handler) http.Han
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Check the Timestamp
-			timestampStr := r.Header.Get("X-UFO-Timestamp")
+			timestampStr := r.Header.Get(api.HeaderTimestamp)
 			timestampInt, err := strconv.ParseInt(timestampStr, 10, 64)
 			if err != nil {
 				respondWithError(w, http.StatusBadRequest, "invalid timestamp", nil)
@@ -43,7 +44,7 @@ func (s *Server) Authenticate(requiresBodyHash bool) func(http.Handler) http.Han
 			}
 
 			// Check the Persona
-			personaID := r.Header.Get("X-UFO-Persona")
+			personaID := r.Header.Get(api.HeaderPersona)
 			persona, ok := s.GetPersona(personaID)
 			if !ok {
 				// Ensure it must be a GET for /api/ufos/{uuid}
@@ -55,7 +56,7 @@ func (s *Server) Authenticate(requiresBodyHash bool) func(http.Handler) http.Han
 					return
 				}
 				// Check if it's an authorized guest
-				hostID := r.Header.Get("X-UFO-Guest-Of")
+				hostID := r.Header.Get(api.HeaderHost)
 				if hostID == "" {
 					respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
 					return
@@ -108,7 +109,7 @@ func (s *Server) Authenticate(requiresBodyHash bool) func(http.Handler) http.Han
 			}
 
 			// Check the Hashed body (if required)
-			sigBase64 := r.Header.Get("X-UFO-Signature")
+			sigBase64 := r.Header.Get(api.HeaderSignature)
 			bodyHash := ""
 			if requiresBodyHash && r.Body != nil {
 				body, err := io.ReadAll(r.Body)
