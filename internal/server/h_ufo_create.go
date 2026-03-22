@@ -81,10 +81,11 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Add any personas to the Access List
-	for _, recipient := range req.AccessList {
+	for recipient, wrappedKey := range req.AccessList {
 		if _, err := qtx.AddUFOAccess(r.Context(), database.AddUFOAccessParams{
-			UfoID:     res.ID,
-			PersonaID: recipient,
+			UfoID:      res.ID,
+			PersonaID:  recipient,
+			WrappedKey: wrappedKey,
 		}); err != nil {
 			respondWithError(
 				w,

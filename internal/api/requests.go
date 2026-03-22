@@ -7,8 +7,8 @@ const (
 	RouteInit     = "/api/init"
 	RouteRegister = "/api/personas"
 	RouteUFOs     = "/api/ufos"
-	RouteOrbit    = "api/orbit"
-	RouteSearch   = "api/tags"
+	RouteOrbit    = "/api/orbit"
+	RouteSearch   = "/api/tags"
 
 	HeaderRegistration = "X-UFO-Registration"
 	HeaderTimestamp    = "X-UFO-Timestamp"
@@ -19,11 +19,11 @@ const (
 
 // for use with CreateUFO, UpdateUFO
 type UFOMetadataRequest struct {
-	PrefixHash string   `json:"prefix_hash"`
-	SizeBytes  int64    `json:"size_bytes"`
-	Metadata   []byte   `json:"metadata"`
-	AccessList []string `json:"access_list"`
-	TagHashes  []string `json:"tag_hashes"`
+	PrefixHash string            `json:"prefix_hash"`
+	SizeBytes  int64             `json:"size_bytes"`
+	Metadata   []byte            `json:"metadata"`
+	AccessList map[string][]byte `json:"access_list"` // map[persona_id]wrapped_key
+	TagHashes  []string          `json:"tag_hashes"`
 }
 
 // for use with CreatePersona

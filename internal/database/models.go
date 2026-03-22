@@ -33,8 +33,9 @@ type Ufo struct {
 }
 
 type UfoAccess struct {
-	UfoID     string `json:"ufo_id"`
-	PersonaID string `json:"persona_id"`
+	UfoID      string `json:"ufo_id"`
+	PersonaID  string `json:"persona_id"`
+	WrappedKey []byte `json:"wrapped_key"`
 }
 
 type UfoTag struct {

@@ -1,8 +1,11 @@
 package objects
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/thomas-reed/ufos/internal/crypto"
 )
 
 type UFOStatus string
@@ -15,33 +18,38 @@ const (
 )
 
 type ObjectMetadata struct {
-	Name        string        `json:"name"`         // "original_filename.ext"
-	ContentType string        `json:"content_type"` // "image/jpeg"
-	Prefix      string        `json:"prefix"`       // "Path" to file
-	SizeBytes   uint64        `json:"size_bytes"`   // Filesize in bytes
-	AccessList  []AccessEntry `json:"access_list"`  // Wrapped keys for sharing
-	Tags        []string      `json:"tags"`         // Human-readable tags
+	Name            string        `json:"name"`              // "original_filename.ext"
+	ContentType     string        `json:"content_type"`      // "image/jpeg"
+	Prefix          string        `json:"prefix"`            // "Path" to file
+	SizeBytes       uint64        `json:"size_bytes"`        // Filesize in bytes
+	OwnerID         string        `json:"owner_id"`          // Owner's persona ID
+	OwnerWrappedKey []byte        `json:"owner_wrapped_key"` // DEK encrypted with Owner's master Key
+	AccessList      []AccessEntry `json:"access_list"`       // List of recipients for sharing
+	Tags            []string      `json:"tags"`              // Human-readable tags
 }
 
 type AccessEntry struct {
-	RecipientID string `json:"id"`
-	WrappedKey  []byte `json:"key"` // The DEK encrypted for this recipient
+	RecipientID string `json:"persona_id"`  // Persona ID of the recipient
+	WrappedKey  []byte `json:"wrapped_key"` // The DEK encrypted for this recipient
 }
 
-func GrantAccess(m *ObjectMetadata, recipientID string) {
-	// TODO: create wrapped key
-	var wrappedKey []byte
+func (m *ObjectMetadata) GrantAccess(recipientID string, key, dek []byte) error {
+	wrappingKey := crypto.DeriveGuestWrappingKey(key, recipientID)
+	wrappedDEK, err := crypto.Encrypt(wrappingKey, dek, crypto.CryptoSuiteV1)
+	if err != nil {
+		return fmt.Errorf("Error encrypting DEK: %w", err)
+	}
 
 	m.AccessList = append(
 		m.AccessList,
 		AccessEntry{
 			RecipientID: recipientID,
-			WrappedKey:  wrappedKey,
+			WrappedKey:  wrappedDEK,
 		},
 	)
 }
 
-func RevokeAccess(m *ObjectMetadata, recipientID string) {
+func (m *ObjectMetadata) RevokeAccess(recipientID string) {
 	for i := range m.AccessList {
 		if m.AccessList[i].RecipientID == recipientID {
 			// Remove the entry from the slice

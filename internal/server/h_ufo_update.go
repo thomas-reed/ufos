@@ -93,10 +93,11 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	for _, recipient := range req.AccessList {
+	for recipient, wrappedKey := range req.AccessList {
 		if _, err := qtx.AddUFOAccess(r.Context(), database.AddUFOAccessParams{
-			UfoID:     updated.ID,
-			PersonaID: recipient,
+			UfoID:      updated.ID,
+			PersonaID:  recipient,
+			WrappedKey: wrappedKey,
 		}); err != nil {
 			respondWithError(
 				w,

@@ -10,8 +10,9 @@ import (
 )
 
 const addUFOAccess = `-- name: AddUFOAccess :one
-INSERT OR IGNORE INTO ufo_access (ufo_id, persona_id)
+INSERT OR IGNORE INTO ufo_access (ufo_id, persona_id, wrapped_key)
 VALUES (
+  ?,
   ?,
   ?
 )
@@ -19,24 +20,42 @@ RETURNING ufo_id
 `
 
 type AddUFOAccessParams struct {
-	UfoID     string `json:"ufo_id"`
-	PersonaID string `json:"persona_id"`
+	UfoID      string `json:"ufo_id"`
+	PersonaID  string `json:"persona_id"`
+	WrappedKey []byte `json:"wrapped_key"`
 }
 
 func (q *Queries) AddUFOAccess(ctx context.Context, arg AddUFOAccessParams) (string, error) {
-	row := q.db.QueryRowContext(ctx, addUFOAccess, arg.UfoID, arg.PersonaID)
+	row := q.db.QueryRowContext(ctx, addUFOAccess, arg.UfoID, arg.PersonaID, arg.WrappedKey)
 	var ufo_id string
 	err := row.Scan(&ufo_id)
 	return ufo_id, err
 }
 
 const deleteUFOAccess = `-- name: DeleteUFOAccess :exec
-DELETE FROM ufo_access WHERE persona_id = ?
+DELETE FROM ufo_access WHERE ufo_id = ?
 `
 
-func (q *Queries) DeleteUFOAccess(ctx context.Context, personaID string) error {
-	_, err := q.db.ExecContext(ctx, deleteUFOAccess, personaID)
+func (q *Queries) DeleteUFOAccess(ctx context.Context, ufoID string) error {
+	_, err := q.db.ExecContext(ctx, deleteUFOAccess, ufoID)
 	return err
+}
+
+const getKeybyUFOIDAndPersonaID = `-- name: GetKeybyUFOIDAndPersonaID :one
+SELECT wrapped_key FROM ufo_access
+WHERE ufo_id = ? AND persona_id = ?
+`
+
+type GetKeybyUFOIDAndPersonaIDParams struct {
+	UfoID     string `json:"ufo_id"`
+	PersonaID string `json:"persona_id"`
+}
+
+func (q *Queries) GetKeybyUFOIDAndPersonaID(ctx context.Context, arg GetKeybyUFOIDAndPersonaIDParams) ([]byte, error) {
+	row := q.db.QueryRowContext(ctx, getKeybyUFOIDAndPersonaID, arg.UfoID, arg.PersonaID)
+	var wrapped_key []byte
+	err := row.Scan(&wrapped_key)
+	return wrapped_key, err
 }
 
 const getUFOAccessForUser = `-- name: GetUFOAccessForUser :one
@@ -57,7 +76,7 @@ func (q *Queries) GetUFOAccessForUser(ctx context.Context, arg GetUFOAccessForUs
 }
 
 const getUsersForUFO = `-- name: GetUsersForUFO :many
-SELECT ufo_id, persona_id FROM ufo_access WHERE ufo_id = ?
+SELECT ufo_id, persona_id, wrapped_key FROM ufo_access WHERE ufo_id = ?
 `
 
 func (q *Queries) GetUsersForUFO(ctx context.Context, ufoID string) ([]UfoAccess, error) {
@@ -69,7 +88,7 @@ func (q *Queries) GetUsersForUFO(ctx context.Context, ufoID string) ([]UfoAccess
 	var items []UfoAccess
 	for rows.Next() {
 		var i UfoAccess
-		if err := rows.Scan(&i.UfoID, &i.PersonaID); err != nil {
+		if err := rows.Scan(&i.UfoID, &i.PersonaID, &i.WrappedKey); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

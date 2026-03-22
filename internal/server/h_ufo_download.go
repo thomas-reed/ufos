@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/thomas-reed/ufos/internal/api"
+	"github.com/thomas-reed/ufos/internal/database"
 	"github.com/thomas-reed/ufos/internal/objects"
 )
 
@@ -51,7 +53,7 @@ func (s *Server) HandleDownloadUFO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Verify the file on disk
+	// Verify/Open the file on disk
 	filePath := filepath.Join(p.RootFS, ufoID+".blob")
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -63,10 +65,30 @@ func (s *Server) HandleDownloadUFO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
+
 	// Construct headers
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", ufo.SizeBytes))
-	w.Header().Set("X-UFO-Metadata", base64.StdEncoding.EncodeToString(ufo.Metadata))
+	if r.Header.Get(api.HeaderHost) == "" {
+		w.Header().Set(api.HeaderMetadata, base64.StdEncoding.EncodeToString(ufo.Metadata))
+	} else {
+		wrappedKey, err := p.db.GetKeybyUFOIDAndPersonaID(
+			r.Context(),
+			database.GetKeybyUFOIDAndPersonaIDParams{
+				UfoID:     ufoID,
+				PersonaID: p.ID,
+			},
+		)
+		if err != nil {
+			respondWithError(
+				w, http.StatusInternalServerError,
+				"error getting wrapped key",
+				err,
+			)
+			return
+		}
+		w.Header().Set(api.HeaderWrappedKey, base64.StdEncoding.EncodeToString(wrappedKey))
+	}
 
 	// Read file and stream
 	_, err = io.Copy(w, file)

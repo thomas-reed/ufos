@@ -7,6 +7,11 @@ import (
 	"github.com/thomas-reed/ufos/internal/objects"
 )
 
+const (
+	HeaderMetadata   = "X-UFO-Metadata"
+	HeaderWrappedKey = "X-UFO-Wrapped-Key"
+)
+
 type CreateUFOResponse struct {
 	ID        string    `json:"id"`
 	CreatedAt time.Time `json:"created_at"`

@@ -21,7 +21,7 @@ func (c *Client) HandleHealthCheck(cmd Command) error {
 		return err
 	}
 
-	// If name wasn't in Args, prompt
+	// If domain wasn't in Args, prompt
 	if *domain == "" {
 		scanner := bufio.NewScanner(os.Stdin)
 		fmt.Print("Enter domain > ")

@@ -140,7 +140,7 @@ func (c *Client) resolvePersona(personas []Persona, personaName string) error {
 	case 1:
 		c.ActivePersona = &Persona{}
 		c.ActivePersona.Name = matches[0].Name
-		c.ActivePersona.BaseURL = matches[0].BaseURL
+		c.ActivePersona.BaseURL = ServerScheme + matches[0].BaseURL
 		c.ActivePersona.PrivateKey = make([]byte, len(matches[0].PrivateKey))
 		copy(c.ActivePersona.PrivateKey, matches[0].PrivateKey)
 		return nil

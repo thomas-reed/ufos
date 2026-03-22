@@ -4,7 +4,7 @@
 CREATE TABLE ufos (
     id TEXT PRIMARY KEY,            -- Unique UUID for the file
     prefix_hash TEXT NOT NULL,      -- Hashed prefix for folder-like navigation
-    size_bytes INTEGER NOT NULL,    -- size of file on disk - "folder" will be 0
+    size_bytes INTEGER NOT NULL,    -- size of file on disk - "folder" will be -1
     upload_status TEXT NOT NULL,    -- pending, uploading, active, failed
     metadata BLOB,                  -- Encrypted JSON (filename, type, etc.)
     created_at DATETIME NOT NULL,
@@ -35,6 +35,7 @@ CREATE TABLE orbit (
 CREATE TABLE ufo_access (
     ufo_id TEXT NOT NULL,
     persona_id TEXT NOT NULL,
+    wrapped_key BLOB NOT NULL,
     PRIMARY KEY (ufo_id, persona_id),
     FOREIGN KEY (ufo_id) REFERENCES ufos(id) ON DELETE CASCADE,
     FOREIGN KEY (persona_id) REFERENCES orbit(persona_id) ON DELETE CASCADE
