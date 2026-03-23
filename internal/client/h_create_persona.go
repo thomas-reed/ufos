@@ -3,7 +3,6 @@ package client
 import (
 	"bufio"
 	"bytes"
-	"crypto/ed25519"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -90,10 +89,14 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 	} else if err != nil {
 		return fmt.Errorf("Error getting persona from vault: %w", err)
 	}
+	defer clear(c.ActivePersona.PrivateSigningKey)
+	defer clear(c.ActivePersona.PrivateExchangeKey)
+	defer clear(c.MasterKey)
 
 	data, err := json.Marshal(api.NewPersonaRequest{
-		ID:        c.PersonaID,
-		PublicKey: c.ActivePersona.PrivateKey.Public().(ed25519.PublicKey),
+		ID:          c.PersonaID,
+		SigningKey:  c.ActivePersona.PublicSigningKey,
+		ExchangeKey: c.ActivePersona.PublicExchangeKey,
 	})
 	body := bytes.NewReader(data)
 	url := domain + api.RouteRegister

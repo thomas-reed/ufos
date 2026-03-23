@@ -33,8 +33,7 @@ type AccessEntry struct {
 	WrappedKey  []byte `json:"wrapped_key"` // The DEK encrypted for this recipient
 }
 
-func (m *ObjectMetadata) GrantAccess(recipientID string, key, dek []byte) error {
-	wrappingKey := crypto.DeriveGuestWrappingKey(key, recipientID)
+func (m *ObjectMetadata) GrantAccess(recipientID string, wrappingKey, dek []byte) error {
 	wrappedDEK, err := crypto.Encrypt(wrappingKey, dek, crypto.CryptoSuiteV1)
 	if err != nil {
 		return fmt.Errorf("Error encrypting DEK: %w", err)
@@ -47,6 +46,7 @@ func (m *ObjectMetadata) GrantAccess(recipientID string, key, dek []byte) error 
 			WrappedKey:  wrappedDEK,
 		},
 	)
+	return nil
 }
 
 func (m *ObjectMetadata) RevokeAccess(recipientID string) {

@@ -79,6 +79,9 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	if err != nil {
 		return err
 	}
+	defer clear(c.ActivePersona.PrivateSigningKey)
+	defer clear(c.ActivePersona.PrivateExchangeKey)
+	defer clear(c.MasterKey)
 
 	// Generate data encryption key
 	dek, err := crypto.GenerateKey()
@@ -151,8 +154,6 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	access := strings.Split(*accessList, ",")
 	for i := range access {
 		access[i] = strings.TrimSpace(access[i])
-		ufoMeta.GrantAccess(access[i], )
+		ufoMeta.GrantAccess(access[i], ???, dek)
 	}
-	for _, recipientID := range access
-	ufoMeta.GrantAccess()
 }

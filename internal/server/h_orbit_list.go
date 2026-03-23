@@ -31,11 +31,12 @@ func (s *Server) HandleOrbitList(w http.ResponseWriter, r *http.Request) {
 	orbitList := make([]api.OrbitItem, 0, len(list))
 	for i := range list {
 		orbitList = append(orbitList, api.OrbitItem{
-			PersonaID: list[i].PersonaID,
-			PublicKey: list[i].PublicKey,
-			Metadata:  list[i].Metadata,
-			CreatedAt: list[i].CreatedAt,
-			UpdatedAt: list[i].UpdatedAt,
+			PersonaID:   list[i].PersonaID,
+			SigningKey:  list[i].SigningKey,
+			ExchangeKey: list[i].ExchangeKey,
+			Metadata:    list[i].Metadata,
+			CreatedAt:   list[i].CreatedAt,
+			UpdatedAt:   list[i].UpdatedAt,
 		})
 	}
 

@@ -13,12 +13,14 @@ import (
 const addToOrbit = `-- name: AddToOrbit :one
 INSERT INTO orbit (
   persona_id,
-  public_key,
+  signing_key,
+  exchange_key,
   metadata,
   created_at,
   updated_at
 )
 VALUES (
+  ?,
   ?,
   ?,
   ?,
@@ -29,9 +31,10 @@ RETURNING persona_id, created_at
 `
 
 type AddToOrbitParams struct {
-	PersonaID string `json:"persona_id"`
-	PublicKey []byte `json:"public_key"`
-	Metadata  []byte `json:"metadata"`
+	PersonaID   string `json:"persona_id"`
+	SigningKey  []byte `json:"signing_key"`
+	ExchangeKey []byte `json:"exchange_key"`
+	Metadata    []byte `json:"metadata"`
 }
 
 type AddToOrbitRow struct {
@@ -40,7 +43,12 @@ type AddToOrbitRow struct {
 }
 
 func (q *Queries) AddToOrbit(ctx context.Context, arg AddToOrbitParams) (AddToOrbitRow, error) {
-	row := q.db.QueryRowContext(ctx, addToOrbit, arg.PersonaID, arg.PublicKey, arg.Metadata)
+	row := q.db.QueryRowContext(ctx, addToOrbit,
+		arg.PersonaID,
+		arg.SigningKey,
+		arg.ExchangeKey,
+		arg.Metadata,
+	)
 	var i AddToOrbitRow
 	err := row.Scan(&i.PersonaID, &i.CreatedAt)
 	return i, err
@@ -59,7 +67,7 @@ func (q *Queries) DeleteFromOrbit(ctx context.Context, personaID string) (string
 }
 
 const getOrbit = `-- name: GetOrbit :one
-SELECT persona_id, public_key, metadata, created_at, updated_at FROM orbit WHERE persona_id = ?
+SELECT persona_id, signing_key, exchange_key, metadata, created_at, updated_at FROM orbit WHERE persona_id = ?
 `
 
 func (q *Queries) GetOrbit(ctx context.Context, personaID string) (Orbit, error) {
@@ -67,7 +75,8 @@ func (q *Queries) GetOrbit(ctx context.Context, personaID string) (Orbit, error)
 	var i Orbit
 	err := row.Scan(
 		&i.PersonaID,
-		&i.PublicKey,
+		&i.SigningKey,
+		&i.ExchangeKey,
 		&i.Metadata,
 		&i.CreatedAt,
 		&i.UpdatedAt,
@@ -76,7 +85,7 @@ func (q *Queries) GetOrbit(ctx context.Context, personaID string) (Orbit, error)
 }
 
 const getOrbitList = `-- name: GetOrbitList :many
-SELECT persona_id, public_key, metadata, created_at, updated_at FROM orbit
+SELECT persona_id, signing_key, exchange_key, metadata, created_at, updated_at FROM orbit
 `
 
 func (q *Queries) GetOrbitList(ctx context.Context) ([]Orbit, error) {
@@ -90,7 +99,8 @@ func (q *Queries) GetOrbitList(ctx context.Context) ([]Orbit, error) {
 		var i Orbit
 		if err := rows.Scan(
 			&i.PersonaID,
-			&i.PublicKey,
+			&i.SigningKey,
+			&i.ExchangeKey,
 			&i.Metadata,
 			&i.CreatedAt,
 			&i.UpdatedAt,

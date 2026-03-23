@@ -99,12 +99,13 @@ func (s *Server) Authenticate(requiresBodyHash bool) func(http.Handler) http.Han
 					return
 				}
 				persona = &Persona{
-					ID:        personaData.PersonaID,
-					PublicKey: personaData.PublicKey,
-					RootFS:    host.RootFS,
-					DBPath:    host.DBPath,
-					DBConn:    host.DBConn,
-					db:        host.db,
+					ID:          personaData.PersonaID,
+					SigningKey:  personaData.SigningKey,
+					ExchangeKey: personaData.ExchangeKey,
+					RootFS:      host.RootFS,
+					DBPath:      host.DBPath,
+					DBConn:      host.DBConn,
+					db:          host.db,
 				}
 			}
 
@@ -134,7 +135,7 @@ func (s *Server) Authenticate(requiresBodyHash bool) func(http.Handler) http.Han
 
 			sig, _ := base64.StdEncoding.DecodeString(sigBase64)
 
-			if !crypto.VerifyRequest(persona.PublicKey, []byte(payload), sig) {
+			if !crypto.VerifyRequest(persona.SigningKey, []byte(payload), sig) {
 				respondWithError(w, http.StatusUnauthorized, "invalid signature", nil)
 				return
 			}

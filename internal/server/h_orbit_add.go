@@ -29,9 +29,10 @@ func (s *Server) HandleAddToOrbit(w http.ResponseWriter, r *http.Request) {
 	res, err := p.db.AddToOrbit(
 		r.Context(),
 		database.AddToOrbitParams{
-			PersonaID: req.PersonaID,
-			PublicKey: req.PublicKey,
-			Metadata:  req.Metadata,
+			PersonaID:   req.PersonaID,
+			SigningKey:  req.SigningKey,
+			ExchangeKey: req.ExchangeKey,
+			Metadata:    req.Metadata,
 		},
 	)
 	if err != nil {

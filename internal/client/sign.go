@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -10,7 +11,11 @@ import (
 	"github.com/thomas-reed/ufos/internal/crypto"
 )
 
-func (c *Client) Sign(r *http.Request, timestamp int64, requiresBodyHash bool) error {
+func (c *Client) Sign(
+	r *http.Request,
+	timestamp int64,
+	requiresBodyHash bool,
+) error {
 	bodyHash := ""
 	if requiresBodyHash && r.Body != nil {
 		body, err := io.ReadAll(r.Body)
@@ -33,7 +38,10 @@ func (c *Client) Sign(r *http.Request, timestamp int64, requiresBodyHash bool) e
 		bodyHash,
 	)
 
-	signature := crypto.SignRequest(c.ActivePersona.PrivateKey, []byte(payload))
+	signature := crypto.SignRequest(
+		ed25519.PrivateKey(c.ActivePersona.PrivateSigningKey),
+		[]byte(payload),
+	)
 
 	r.Header.Set("X-UFO-Persona", c.PersonaID)
 	r.Header.Set("X-UFO-Timestamp", fmt.Sprintf("%d", timestamp))

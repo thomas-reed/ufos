@@ -1,12 +1,14 @@
 -- name: AddToOrbit :one
 INSERT INTO orbit (
   persona_id,
-  public_key,
+  signing_key,
+  exchange_key,
   metadata,
   created_at,
   updated_at
 )
 VALUES (
+  ?,
   ?,
   ?,
   ?,

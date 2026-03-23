@@ -10,11 +10,12 @@ import (
 )
 
 type Orbit struct {
-	PersonaID string    `json:"persona_id"`
-	PublicKey []byte    `json:"public_key"`
-	Metadata  []byte    `json:"metadata"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	PersonaID   string    `json:"persona_id"`
+	SigningKey  []byte    `json:"signing_key"`
+	ExchangeKey []byte    `json:"exchange_key"`
+	Metadata    []byte    `json:"metadata"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type Request struct {

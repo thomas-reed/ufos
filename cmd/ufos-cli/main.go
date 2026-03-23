@@ -13,8 +13,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error initializing client: %v", err)
 	}
-	defer clear(c.ActivePersona.PrivateKey)
-	defer clear(c.MasterKey)
+	
 	// build command registry
 	cmds := client.Commands{
 		Registry: make(map[string]func(cmd client.Command) error),

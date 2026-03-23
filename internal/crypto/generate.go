@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"crypto/ecdh"
 	"crypto/ed25519"
 	"crypto/rand"
 	"fmt"
@@ -45,6 +46,16 @@ func GenerateNonce() ([]byte, error) {
 	return nonce, nil
 }
 
-func GenerateAsymPrivateKey() (ed25519.PublicKey, ed25519.PrivateKey, error) {
+// For Identity/Signatures (Ed25519)
+func GenerateSigningKeyPair() (pub, priv []byte, err error) {
 	return ed25519.GenerateKey(rand.Reader)
+}
+
+// For Encryption/Exchange (X25519)
+func GenerateExchangeKeyPair() (pub, priv []byte, err error) {
+	key, err := ecdh.X25519().GenerateKey(rand.Reader)
+	if err != nil {
+		return nil, nil, err
+	}
+	return key.PublicKey().Bytes(), key.Bytes(), nil
 }

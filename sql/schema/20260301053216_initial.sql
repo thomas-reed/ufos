@@ -25,7 +25,8 @@ CREATE INDEX idx_tag_hash ON ufo_tags(tag_hash);
 -- Stores the public keys of trusted acquaintances.
 CREATE TABLE orbit (
     persona_id TEXT PRIMARY KEY, -- The ID of the friend
-    public_key BLOB NOT NULL,    -- Their Ed25519 public key
+    signing_key BLOB NOT NULL,    -- Their ed25519 public key for signature verification
+    exchange_key BLOB NOT NULL,  -- Their x25519 public key for encryption
     metadata BLOB,               -- Optional encrypted info about user
     created_at DATETIME NOT NULL,
     updated_at DATETIME NOT NULL

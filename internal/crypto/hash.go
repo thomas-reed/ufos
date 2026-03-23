@@ -1,7 +1,6 @@
 package crypto
 
 import (
-	"crypto/ed25519"
 	"crypto/hmac"
 	"crypto/sha3"
 	"encoding/base64"
@@ -21,13 +20,13 @@ func derive(key []byte, domain string, context string) []byte {
 	return h.Sum(nil)
 }
 
-func DerivePersonaID(publicKey ed25519.PublicKey, personaName string) string {
-	hash := derive(publicKey, "UFOS-PERSONA-ID-V1", personaName)
+func DerivePersonaID(publicSigningKey []byte, personaName string) string {
+	hash := derive(publicSigningKey, "UFOS-PERSONA-ID-V1", personaName)
 	return base64.URLEncoding.EncodeToString(hash)
 }
 
-func DeriveMasterKey(privateKey ed25519.PrivateKey, personaID string) []byte {
-	return derive(privateKey, "UFOS-MASTER-KEY-V1", personaID)
+func DeriveMasterKey(privateExchangeKey []byte, personaID string) []byte {
+	return derive(privateExchangeKey, "UFOS-MASTER-KEY-V1", personaID)
 }
 
 func DeriveWrappingKey(masterKey []byte, personaID string) []byte {
@@ -67,9 +66,9 @@ func HashTag(salt []byte, tag string) string {
 	h := hmac.New(func() hash.Hash {
 		return sha3.New256()
 	}, salt)
-	
+
 	h.Write([]byte(tag))
-	
+
 	// c. Get the resulting bytes and encode to Base64 (or Hex)
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
 }

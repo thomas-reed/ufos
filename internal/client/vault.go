@@ -29,9 +29,12 @@ const (
 )
 
 type Persona struct {
-	Name       string             `json:"name"`        // user-provided descriptor
-	BaseURL    string             `json:"base_url"`    // URL of the server
-	PrivateKey ed25519.PrivateKey `json:"private_key"` // private key for this identity
+	Name               string `json:"name"`                 // user-provided descriptor
+	BaseURL            string `json:"base_url"`             // URL of the server
+	PrivateSigningKey  []byte `json:"private_signing_key"`  // Ed25519 private key (64bytes)
+	PublicSigningKey   []byte `json:"public_signing_key"`   // Ed25519 public key
+	PrivateExchangeKey []byte `json:"private_exchange_key"` // X25519 private key (32bytes)
+	PublicExchangeKey  []byte `json:"public_exchange_key"`  // X25519 public key
 }
 
 type Vault struct {
@@ -92,22 +95,15 @@ func (c *Client) getPersonaFromVaultV1(
 	}
 	defer func() {
 		for i := range personas {
-			clear(personas[i].PrivateKey)
+			clear(personas[i].PrivateSigningKey)
+			clear(personas[i].PrivateExchangeKey)
 		}
 	}()
 
 	if err = c.resolvePersona(personas, personaName); err != nil {
 		return err
 	}
-	// generate the ID and master key from the retrieved persona
-	c.PersonaID = crypto.DerivePersonaID(
-		c.ActivePersona.PrivateKey.Public().(ed25519.PublicKey),
-		c.ActivePersona.Name,
-	)
-	c.MasterKey = crypto.DeriveMasterKey(
-		c.ActivePersona.PrivateKey,
-		c.PersonaID,
-	)
+	
 	return nil
 }
 
@@ -141,8 +137,23 @@ func (c *Client) resolvePersona(personas []Persona, personaName string) error {
 		c.ActivePersona = &Persona{}
 		c.ActivePersona.Name = matches[0].Name
 		c.ActivePersona.BaseURL = ServerScheme + matches[0].BaseURL
-		c.ActivePersona.PrivateKey = make([]byte, len(matches[0].PrivateKey))
-		copy(c.ActivePersona.PrivateKey, matches[0].PrivateKey)
+		c.ActivePersona.PrivateSigningKey = make([]byte, len(matches[0].PrivateSigningKey))
+		copy(c.ActivePersona.PrivateSigningKey, matches[0].PrivateSigningKey)
+		c.ActivePersona.PublicSigningKey = make([]byte, len(matches[0].PublicSigningKey))
+		copy(c.ActivePersona.PublicSigningKey, matches[0].PublicSigningKey)
+		c.ActivePersona.PrivateExchangeKey = make([]byte, len(matches[0].PrivateExchangeKey))
+		copy(c.ActivePersona.PrivateExchangeKey, matches[0].PrivateExchangeKey)
+		c.ActivePersona.PublicExchangeKey = make([]byte, len(matches[0].PublicExchangeKey))
+		copy(c.ActivePersona.PublicExchangeKey, matches[0].PublicExchangeKey)
+		// generate the ID and master key from the retrieved persona
+		c.PersonaID = crypto.DerivePersonaID(
+			ed25519.PublicKey(c.ActivePersona.PrivateSigningKey),
+			c.ActivePersona.Name,
+		)
+		c.MasterKey = crypto.DeriveMasterKey(
+			c.ActivePersona.PrivateSigningKey,
+			c.PersonaID,
+		)
 		return nil
 	default: // matches more than 1
 		var domains []string
@@ -204,26 +215,38 @@ func (c *Client) addPersonaToVaultV1(
 	}
 	defer func() {
 		for i := range personas {
-			clear(personas[i].PrivateKey)
+			clear(personas[i].PrivateSigningKey)
+			clear(personas[i].PrivateExchangeKey)
 		}
 	}()
 
 	var persona Persona
 	for _, p := range personas {
+		if p.BaseURL == baseURL && p.Name == personaName {
+			return fmt.Errorf("Persona '%s' already exists at domain '%s'", personaName, baseURL)
+		}
 		if p.BaseURL == baseURL {
 			persona.Name = personaName
 			persona.BaseURL = baseURL
-			persona.PrivateKey = make([]byte, len(p.PrivateKey))
-			copy(persona.PrivateKey, p.PrivateKey)
+			persona.PrivateSigningKey = make([]byte, len(p.PrivateSigningKey))
+			copy(persona.PrivateSigningKey, p.PrivateSigningKey)
+			persona.PublicSigningKey = make([]byte, len(p.PublicSigningKey))
+			copy(persona.PublicSigningKey, p.PublicSigningKey)
+			persona.PrivateExchangeKey = make([]byte, len(p.PrivateExchangeKey))
+			copy(persona.PrivateExchangeKey, p.PrivateExchangeKey)
+			persona.PublicExchangeKey = make([]byte, len(p.PublicExchangeKey))
+			copy(persona.PublicExchangeKey, p.PublicExchangeKey)
+			break
 		}
 	}
-	if persona.PrivateKey == nil {
+	if persona.PrivateSigningKey == nil && persona.PrivateExchangeKey == nil {
 		persona, err = buildPersona(personaName, baseURL)
 		if err != nil {
 			return err
 		}
 	}
-	defer clear(persona.PrivateKey)
+	defer clear(persona.PrivateSigningKey)
+	defer clear(persona.PrivateExchangeKey)
 
 	payload, err := json.Marshal(append(personas, persona))
 
@@ -278,14 +301,16 @@ func (c *Client) removePersonaFromVaultV1(
 	}
 	defer func() {
 		for i := range personas {
-			clear(personas[i].PrivateKey)
+			clear(personas[i].PrivateSigningKey)
+			clear(personas[i].PrivateExchangeKey)
 		}
 	}()
 
 	// Filter out the persona to remove
 	newPersonas := make([]Persona, 0, len(personas))
 	for i := range personas {
-		defer clear(personas[i].PrivateKey)
+		defer clear(personas[i].PrivateSigningKey)
+		defer clear(personas[i].PrivateExchangeKey)
 		if personas[i].Name == personaName && personas[i].BaseURL == baseURL {
 			continue
 		}
@@ -293,7 +318,8 @@ func (c *Client) removePersonaFromVaultV1(
 	}
 	defer func() {
 		for i := range newPersonas {
-			clear(newPersonas[i].PrivateKey)
+			clear(newPersonas[i].PrivateSigningKey)
+			clear(newPersonas[i].PrivateExchangeKey)
 		}
 	}()
 
@@ -342,7 +368,8 @@ func CreateNewVault(personaName, baseURL string, password []byte) error {
 	if err != nil {
 		return err
 	}
-	defer clear(persona.PrivateKey)
+	defer clear(persona.PrivateSigningKey)
+	defer clear(persona.PrivateExchangeKey)
 
 	payload, err := json.Marshal([]Persona{persona})
 	defer clear(payload)
@@ -356,16 +383,24 @@ func CreateNewVault(personaName, baseURL string, password []byte) error {
 }
 
 func buildPersona(personaName, baseURL string) (Persona, error) {
-	persona := Persona{
-		Name:    personaName,
-		BaseURL: baseURL,
-	}
-	_, privateKey, err := crypto.GenerateAsymPrivateKey()
+	publicEd, privateEd, err := crypto.GenerateSigningKeyPair()
 	if err != nil {
 		return Persona{}, fmt.Errorf("Error generating private key: %w", err)
 	}
-	persona.PrivateKey = privateKey
-	return persona, nil
+
+	publicX, privateX, err := crypto.GenerateExchangeKeyPair()
+	if err != nil {
+		return Persona{}, fmt.Errorf("Error generating exchange key: %w", err)
+	}
+
+	return Persona{
+		Name:               personaName,
+		BaseURL:            baseURL,
+		PrivateSigningKey:  privateEd,
+		PublicSigningKey:   publicEd,
+		PrivateExchangeKey: privateX,
+		PublicExchangeKey:  publicX,
+	}, nil
 }
 
 func saveVault(v *Vault) error {

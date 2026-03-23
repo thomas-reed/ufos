@@ -1,7 +1,6 @@
 package api
 
 import (
-	"crypto/ed25519"
 	"time"
 
 	"github.com/thomas-reed/ufos/internal/objects"
@@ -47,11 +46,12 @@ type CreatePersonaResponse struct {
 }
 
 type OrbitItem struct {
-	PersonaID string            `json:"persona_id"`
-	PublicKey ed25519.PublicKey `json:"public_key"`
-	Metadata  []byte            `json:"metadata"`
-	CreatedAt time.Time         `json:"created_at"`
-	UpdatedAt time.Time         `json:"updated_at"`
+	PersonaID   string    `json:"persona_id"`
+	SigningKey  []byte    `json:"signing_key"`
+	ExchangeKey []byte    `json:"exchange_key"`
+	Metadata    []byte    `json:"metadata"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
 }
 
 type AddToOrbitResponse struct {

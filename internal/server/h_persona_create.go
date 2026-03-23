@@ -57,12 +57,13 @@ func (s *Server) HandleCreatePersona(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	err = s.AddPersona(Persona{
-		ID:        req.ID,
-		PublicKey: req.PublicKey,
-		RootFS:    rootFS,
-		DBPath:    dbPath,
-		DBConn:    dbConn,
-		db:        database.New(dbConn),
+		ID:          req.ID,
+		SigningKey:  req.SigningKey,
+		ExchangeKey: req.ExchangeKey,
+		RootFS:      rootFS,
+		DBPath:      dbPath,
+		DBConn:      dbConn,
+		db:          database.New(dbConn),
 	})
 	if err != nil {
 		respondWithError(w, http.StatusConflict, "duplicate ID found", nil)

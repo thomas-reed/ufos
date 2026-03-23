@@ -1,7 +1,6 @@
 package server
 
 import (
-	"crypto/ed25519"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -12,12 +11,13 @@ import (
 )
 
 type Persona struct {
-	ID        string            `json:"id"`           // Persona ID
-	PublicKey ed25519.PublicKey `json:"public_key"`   // ED25519 public key
-	RootFS    string            `json:"root_fs_path"` // root directory for the persona's file store
-	DBPath    string            `json:"db_path"`      // server local path to the sqlite db file
-	DBConn    *sql.DB
-	db        *database.Queries
+	ID          string `json:"id"`           // Persona ID
+	SigningKey  []byte `json:"signing_key"`  // ED25519 public key for signature verification
+	ExchangeKey []byte `json:"exchange_key"` // X25519 public key for encryption
+	RootFS      string `json:"root_fs_path"` // root directory for the persona's file store
+	DBPath      string `json:"db_path"`      // server local path to the sqlite db file
+	DBConn      *sql.DB
+	db          *database.Queries
 }
 
 func (s *Server) LoadRegistry() error {

@@ -1,7 +1,5 @@
 package api
 
-import "crypto/ed25519"
-
 const (
 	RouteHealth   = "/healthz"
 	RouteInit     = "/api/init"
@@ -28,12 +26,14 @@ type UFOMetadataRequest struct {
 
 // for use with CreatePersona
 type NewPersonaRequest struct {
-	ID        string            `json:"id"`
-	PublicKey ed25519.PublicKey `json:"public_key"`
+	ID   string `json:"id"`
+	SigningKey  []byte `json:"signing_key"`  // Ed25519 public key
+	ExchangeKey []byte `json:"exchange_key"` // X25519 public key
 }
 
 type OrbitMetadataRequest struct {
-	PersonaID string            `json:"persona_id"`
-	PublicKey ed25519.PublicKey `json:"public_key"`
-	Metadata  []byte            `json:"metadata"`
+	PersonaID   string `json:"persona_id"`   // Persona ID of your contact
+	SigningKey  []byte `json:"signing_key"`  // their Ed25519 public key
+	ExchangeKey []byte `json:"exchange_key"` // their X25519 public key
+	Metadata    []byte `json:"metadata"`     // encrypted blob of metadata
 }
