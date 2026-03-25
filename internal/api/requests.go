@@ -26,7 +26,7 @@ type UFOMetadataRequest struct {
 
 // for use with CreatePersona
 type NewPersonaRequest struct {
-	ID   string `json:"id"`
+	ID          string `json:"id"`
 	SigningKey  []byte `json:"signing_key"`  // Ed25519 public key
 	ExchangeKey []byte `json:"exchange_key"` // X25519 public key
 }

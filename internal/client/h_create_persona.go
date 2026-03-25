@@ -80,11 +80,11 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 		// In case of an error, create the new persona and load it into the client
 		err = c.AddPersonaToVault(*name, domain, pw)
 		if err != nil {
-			return fmt.Errorf("Error writing new persona to vault: %s", err)
+			return fmt.Errorf("Error writing new persona to vault: %w", err)
 		}
 		err = c.GetPersonaFromVault(*name, pw)
 		if err != nil {
-			return fmt.Errorf("Error retrieving new persona from vault: %s", err)
+			return fmt.Errorf("Error retrieving new persona from vault: %w", err)
 		}
 	} else if err != nil {
 		return fmt.Errorf("Error getting persona from vault: %w", err)
@@ -106,7 +106,7 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 
 	req, err := http.NewRequest("POST", url, body)
 	if err != nil {
-		return fmt.Errorf("Error creating request %s", err)
+		return fmt.Errorf("Error creating request %w", err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -114,7 +114,7 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("Error executing request %s", err)
+		return fmt.Errorf("Error executing request %w", err)
 	}
 	defer res.Body.Close()
 
@@ -127,11 +127,11 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 	case http.StatusCreated:
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
-			return fmt.Errorf("Error reading response body: %s", err)
+			return fmt.Errorf("Error reading response body: %w", err)
 		}
 		personaRes := api.CreatePersonaResponse{}
 		if err := json.Unmarshal(body, &personaRes); err != nil {
-			return fmt.Errorf("Error unmarshalling json body: %s", err)
+			return fmt.Errorf("Error unmarshalling json body: %w", err)
 		}
 		if personaRes.ID == c.PersonaID {
 			fmt.Printf("Persona '%s' has been registered on %s", personaRes.ID, domain)

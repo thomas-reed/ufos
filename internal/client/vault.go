@@ -103,7 +103,7 @@ func (c *Client) getPersonaFromVaultV1(
 	if err = c.resolvePersona(personas, personaName); err != nil {
 		return err
 	}
-	
+
 	return nil
 }
 
@@ -136,7 +136,7 @@ func (c *Client) resolvePersona(personas []Persona, personaName string) error {
 	case 1:
 		c.ActivePersona = &Persona{}
 		c.ActivePersona.Name = matches[0].Name
-		c.ActivePersona.BaseURL = ServerScheme + matches[0].BaseURL
+		c.ActivePersona.BaseURL = matches[0].BaseURL
 		c.ActivePersona.PrivateSigningKey = make([]byte, len(matches[0].PrivateSigningKey))
 		copy(c.ActivePersona.PrivateSigningKey, matches[0].PrivateSigningKey)
 		c.ActivePersona.PublicSigningKey = make([]byte, len(matches[0].PublicSigningKey))

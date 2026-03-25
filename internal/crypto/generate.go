@@ -59,3 +59,19 @@ func GenerateExchangeKeyPair() (pub, priv []byte, err error) {
 	}
 	return key.PublicKey().Bytes(), key.Bytes(), nil
 }
+
+// For creating a shared secret for asymmetric encryption
+func GenerateSharedSecret(privateKey, publicKey []byte) (secret []byte, err error) {
+	privX, err := ecdh.X25519().NewPrivateKey(privateKey)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { privX = nil }() // Sever reference for security
+
+	pubX, err := ecdh.X25519().NewPublicKey(publicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return privX.ECDH(pubX)
+}

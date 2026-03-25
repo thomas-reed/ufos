@@ -13,7 +13,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error initializing client: %v", err)
 	}
-	
+
 	// build command registry
 	cmds := client.Commands{
 		Registry: make(map[string]func(cmd client.Command) error),
@@ -28,6 +28,7 @@ func main() {
 	cmds.Register("search", c.HandleSearch)
 	cmds.Register("update", c.HandleUpdateUFO)
 	cmds.Register("upload", c.HandleUploadUFO)
+	cmds.Register("orbit", c.HandleOrbit)
 
 	// parse cmd line arguments
 	if len(os.Args) < 2 {

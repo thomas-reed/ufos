@@ -2,10 +2,7 @@ package client
 
 import (
 	"bufio"
-	"bytes"
-	"crypto/ed25519"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -14,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/thomas-reed/ufos/internal/api"
 	"github.com/thomas-reed/ufos/internal/crypto"
@@ -101,7 +99,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	// File name, size
 	info, err := file.Stat()
 	if err != nil {
-			return err
+		return err
 	}
 
 	// Content Type
@@ -110,10 +108,10 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	contentType := http.DetectContentType(buf[:n])
 	// Fallback if generic
 	if contentType == "application/octet-stream" {
-			ext := filepath.Ext(*filePath)
-			if m := mime.TypeByExtension(ext); m != "" {
-					contentType = m
-			}
+		ext := filepath.Ext(*filePath)
+		if m := mime.TypeByExtension(ext); m != "" {
+			contentType = m
+		}
 	}
 	file.Seek(0, io.SeekStart)
 
@@ -126,14 +124,14 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	}
 
 	ufoMeta := objects.ObjectMetadata{
-		Name: info.Name(),
-		ContentType: contentType,
-		SizeBytes: uint64(info.Size()),
-		Prefix: *prefix,
-		OwnerID: c.PersonaID,
+		Name:            info.Name(),
+		ContentType:     contentType,
+		SizeBytes:       uint64(info.Size()),
+		Prefix:          *prefix,
+		OwnerID:         c.PersonaID,
 		OwnerWrappedKey: wrappedDEK,
-		Tags: []string{},
-		AccessList: []objects.AccessEntry{},
+		Tags:            []string{},
+		AccessList:      []objects.AccessEntry{},
 	}
 
 	// Tags and Prefix
@@ -141,19 +139,92 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	searchSalt := crypto.DeriveSearchSalt(c.MasterKey, c.PersonaID)
 	defer clear(searchSalt)
 	// Get the hashed prefix
-	prefixHash := crypto.HashTag(searchSalt, *prefix)
+	hashedPrefix := crypto.HashTag(searchSalt, *prefix)
 	// Make the list of hashed tags while cleaning the tags for storage in the metadata
-	hashedTags := make([]string, len(tags))
+	hashedTags := make([]string, 0, len(tags))
 	for i := range tags {
 		tags[i] = strings.ToLower(strings.TrimSpace(tags[i]))
 		hashedTags = append(hashedTags, crypto.HashTag(searchSalt, tags[i]))
 	}
 	ufoMeta.AddTags(tags...)
-	
+
+	// Get Orbit
+	url := c.ActivePersona.BaseURL + api.RouteOrbit
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		url = ServerScheme + url
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("Error creating request %s", err)
+	}
+
+	timestamp := time.Now().Unix()
+	if err = c.Sign(req, timestamp, false); err != nil {
+		return fmt.Errorf("Error signing request: %w", err)
+	}
+
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("Error executing request %w", err)
+	}
+	defer res.Body.Close()
+
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return fmt.Errorf("Error reading response body %w", err)
+	}
+
+	var orbit []api.OrbitItem
+	if err = json.Unmarshal(data, &orbit); err != nil {
+		return fmt.Errorf("Error unmarshalling orbit data %w", err)
+	}
+	// make orbit into a map for faster searching for access list
+	orbitMap := make(map[string]api.OrbitItem)
+	for _, p := range orbit {
+		orbitMap[p.PersonaID] = p
+	}
+
 	// Access List
+	accessListMap := make(map[string][]byte)
 	access := strings.Split(*accessList, ",")
 	for i := range access {
 		access[i] = strings.TrimSpace(access[i])
-		ufoMeta.GrantAccess(access[i], ???, dek)
+		if _, found := orbitMap[access[i]]; !found {
+			fmt.Printf(
+				"Skipping '%s' - persona is not in your orbit. Use 'ufos orbit add -u <Persona_ID>'",
+				access[i],
+			)
+			continue
+		}
+		sharedSecret, err := crypto.GenerateSharedSecret(
+			c.ActivePersona.PrivateExchangeKey,
+			orbitMap[access[i]].ExchangeKey,
+		)
+		if err != nil {
+			return fmt.Errorf("Error generating shared secret %w", err)
+		}
+		guestWrappingKey := crypto.DeriveWrappingKey(sharedSecret, access[i])
+		wrappedDEK, err := ufoMeta.GrantAccess(access[i], guestWrappingKey, dek)
+		clear(sharedSecret)
+		clear(guestWrappingKey)
+		accessListMap[access[i]] = wrappedDEK
 	}
+
+	// Encrypt the metadata
+	metaBytes, err := json.Marshal(ufoMeta)
+	if err != nil {
+		return fmt.Errorf("Error marshalling metadata: %w", err)
+	}
+	metaBlob, err := crypto.Encrypt(c.MasterKey, metaBytes, crypto.CryptoSuiteV1)
+
+	// Populate the UFOMetadataRequest struct
+	UFOReqData := api.UFOMetadataRequest{
+		PrefixHash: hashedPrefix,
+		SizeBytes:  int64(ufoMeta.SizeBytes) + crypto.CryptoMetadataV1Size,
+		Metadata:   metaBlob,
+		TagHashes:  hashedTags,
+		AccessList: accessListMap,
+	}
+
 }
