@@ -252,7 +252,7 @@ func (c *Client) addPersonaToVaultV1(
 
 	v.Payload, err = crypto.Encrypt(vaultKey, payload, crypto.CryptoSuiteV1)
 	if err != nil {
-		return fmt.Errorf("Error encrypting persona payload: %w", err)
+		return err
 	}
 
 	return saveVault(v)
@@ -376,7 +376,7 @@ func CreateNewVault(personaName, baseURL string, password []byte) error {
 
 	v.Payload, err = crypto.Encrypt(vaultKey, payload, crypto.CryptoSuiteV1)
 	if err != nil {
-		return fmt.Errorf("Error encrypting persona payload: %w", err)
+		return err
 	}
 
 	return saveVault(&v)
@@ -385,12 +385,12 @@ func CreateNewVault(personaName, baseURL string, password []byte) error {
 func buildPersona(personaName, baseURL string) (Persona, error) {
 	publicEd, privateEd, err := crypto.GenerateSigningKeyPair()
 	if err != nil {
-		return Persona{}, fmt.Errorf("Error generating private key: %w", err)
+		return Persona{}, err
 	}
 
 	publicX, privateX, err := crypto.GenerateExchangeKeyPair()
 	if err != nil {
-		return Persona{}, fmt.Errorf("Error generating exchange key: %w", err)
+		return Persona{}, err
 	}
 
 	return Persona{

@@ -47,12 +47,12 @@ func Encrypt(key, plaintext []byte, version CryptoSuite) (ciphertext []byte, err
 func encryptV1(key, plaintext []byte) (ciphertext []byte, err error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error creating cipher: %w", err)
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error creating gcm: %w", err)
 	}
 
 	nonce, err := generateRandom(gcm.NonceSize())
@@ -86,12 +86,12 @@ func Decrypt(key, ciphertext []byte) (plaintext []byte, err error) {
 func decryptV1(key, ciphertext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error creating cipher: %w", err)
 	}
 
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Error creating gcm: %w", err)
 	}
 
 	nonceSize := gcm.NonceSize()

@@ -1,17 +1,17 @@
 package client
 
 import (
-    "bytes"
-    "encoding/json"
-    "fmt"
-    "io"
-    "net/http"
-		"strings"
-    "time"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
 )
 
 const (
-	serverScheme  = "http://" // just for now (dev) - need to figure out letsEncrypt certs
+	serverScheme = "http://" // just for now (dev) - need to figure out letsEncrypt certs
 )
 
 // Signed, with body hash
@@ -44,7 +44,9 @@ func ufoPublicRequest[T any](c *Client, method, url string, reqBody any, headers
 // Signed, no nody hash
 func ufoStreamRequest(c *Client, method, url string, body io.Reader, size int64, headers map[string]string) error {
 	req, err := http.NewRequest(method, url, body)
-	if err != nil { return err }
+	if err != nil {
+		return fmt.Errorf("Error building request: %w", err)
+	}
 
 	req.ContentLength = size
 	req.Header.Set("Content-Type", "application/octet-stream")
@@ -57,11 +59,13 @@ func ufoStreamRequest(c *Client, method, url string, body io.Reader, size int64,
 	}
 
 	res, err := c.HTTPClient.Do(req)
-	if err != nil { return err }
+	if err != nil {
+		return err
+	}
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
-		return fmt.Errorf("ufo upload failed (%d)", res.StatusCode)
+		return fmt.Errorf("Request returned status (%d)", res.StatusCode)
 	}
 	return nil
 }
@@ -80,7 +84,9 @@ func buildJSONRequest(method, url string, body any, headers map[string]string) (
 	}
 
 	req, err := http.NewRequest(method, url, bodyReader)
-	if err != nil { return nil, err }
+	if err != nil {
+		return nil, fmt.Errorf("Error building request: %w", err)
+	}
 
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
@@ -94,11 +100,13 @@ func buildJSONRequest(method, url string, body any, headers map[string]string) (
 func sendAndDecode[T any](c *Client, req *http.Request) (T, error) {
 	var resData T
 	res, err := c.HTTPClient.Do(req)
-	if err != nil { return resData, err }
+	if err != nil {
+		return resData, fmt.Errorf("Error sending request: %w", err)
+	}
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
-		return resData, fmt.Errorf("server error (%d)", res.StatusCode)
+		return resData, fmt.Errorf("Server error (%d)", res.StatusCode)
 	}
 
 	// Handle empty response bodies (like 204 No Content)
@@ -106,6 +114,8 @@ func sendAndDecode[T any](c *Client, req *http.Request) (T, error) {
 		return resData, nil
 	}
 
-	err = json.NewDecoder(res.Body).Decode(&resData)
-	return resData, err
+	if err = json.NewDecoder(res.Body).Decode(&resData); err != nil {
+		return resData, fmt.Errorf("Error decoding response: %w", err)
+	}
+	return resData, nil
 }

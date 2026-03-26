@@ -1,7 +1,6 @@
 package objects
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -26,6 +25,8 @@ type ObjectMetadata struct {
 	OwnerWrappedKey []byte        `json:"owner_wrapped_key"` // DEK encrypted with Owner's master Key
 	AccessList      []AccessEntry `json:"access_list"`       // List of recipients for sharing
 	Tags            []string      `json:"tags"`              // Human-readable tags
+	IV              []byte        `json:"iv"`                // 16 bytes for AES-CTR
+	PlaintextHash   []byte        `json:"plaintext_hash"`    // For optional integrity check
 }
 
 type AccessEntry struct {
@@ -40,7 +41,7 @@ func (m *ObjectMetadata) GrantAccess(
 ) (wrappedDEK []byte, err error) {
 	wrappedDEK, err = crypto.Encrypt(wrappingKey, dek, crypto.CryptoSuiteV1)
 	if err != nil {
-		return nil, fmt.Errorf("Error encrypting DEK: %w", err)
+		return nil, err
 	}
 
 	m.AccessList = append(

@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
-	"strings"
 
 	"github.com/thomas-reed/ufos/internal/api"
 )
@@ -33,27 +31,11 @@ func (c *Client) HandleHealthCheck(cmd Command) error {
 	}
 
 	url := *domain + api.RouteHealth
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		url = ServerScheme + url
-	}
-
-	req, err := http.NewRequest("GET", url, nil)
+	_, err := ufoPublicRequest[struct{}](c, "GET", url, nil, nil)
 	if err != nil {
-		return fmt.Errorf("Error creating request %s", err)
+		return err
 	}
 
-	res, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("Error executing request %s", err)
-	}
-	defer res.Body.Close()
-
-	// Possible responses
-	switch res.StatusCode {
-	case http.StatusOK:
-		fmt.Println("Server is up!")
-		return nil
-	default:
-		return fmt.Errorf("Unexpected response status: %d", res.StatusCode)
-	}
+	fmt.Println("Server is up!")
+	return nil
 }

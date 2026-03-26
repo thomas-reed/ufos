@@ -7,8 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strings"
 
@@ -100,44 +98,22 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 	})
 	body := bytes.NewReader(data)
 	url := domain + api.RouteRegister
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		url = ServerScheme + url
+	header := map[string]string{
+		api.HeaderRegistration: *token,
 	}
-
-	req, err := http.NewRequest("POST", url, body)
+	res, err := ufoSignedRequest[api.CreatePersonaResponse](
+		c,
+		"POST",
+		url,
+		body,
+		header,
+	)
 	if err != nil {
-		return fmt.Errorf("Error creating request %w", err)
+		return fmt.Errorf("Error creating persona: %w", err)
 	}
 
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add(api.HeaderRegistration, *token)
-
-	res, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("Error executing request %w", err)
-	}
-	defer res.Body.Close()
-
-	// Possible responses
-	switch res.StatusCode {
-	case http.StatusUnauthorized:
-		return fmt.Errorf("Server registration failed, check token and retry registration.")
-	case http.StatusConflict:
-		fmt.Println("Persona was already registered on server. Local vault is now in sync.")
-	case http.StatusCreated:
-		body, err := io.ReadAll(res.Body)
-		if err != nil {
-			return fmt.Errorf("Error reading response body: %w", err)
-		}
-		personaRes := api.CreatePersonaResponse{}
-		if err := json.Unmarshal(body, &personaRes); err != nil {
-			return fmt.Errorf("Error unmarshalling json body: %w", err)
-		}
-		if personaRes.ID == c.PersonaID {
-			fmt.Printf("Persona '%s' has been registered on %s", personaRes.ID, domain)
-		}
-	default:
-		return fmt.Errorf("Unexpected response status: %d", res.StatusCode)
+	if res.ID == c.PersonaID {
+		fmt.Printf("Persona '%s' has been registered on %s", res.ID, domain)
 	}
 	return nil
 }

@@ -2,6 +2,8 @@ package client
 
 import (
 	"bufio"
+	"crypto/aes"
+	"crypto/cipher"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -11,7 +13,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/thomas-reed/ufos/internal/api"
 	"github.com/thomas-reed/ufos/internal/crypto"
@@ -68,12 +69,12 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 
 	// get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
-	pw, err := term.ReadPassword(int(os.Stdin.Fd()))
+	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
-	defer clear(pw)
-	err = c.GetPersonaFromVault(*name, pw)
+	defer clear(password)
+	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
 	}
@@ -84,7 +85,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	// Generate data encryption key
 	dek, err := crypto.GenerateKey()
 	if err != nil {
-		return fmt.Errorf("Error generating encryption key", err)
+		return err
 	}
 	defer clear(dek)
 
@@ -99,8 +100,20 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	// File name, size
 	info, err := file.Stat()
 	if err != nil {
+		return fmt.Errorf("Error getting file data: %w", err)
+	}
+
+	fileHash, err := crypto.HashFile(file)
+	if err != nil {
 		return err
 	}
+	defer clear(fileHash)
+
+	iv, err := crypto.GenerateIV()
+	if err != nil {
+		return err
+	}
+	defer clear(iv)
 
 	// Content Type
 	buf := make([]byte, 512)
@@ -132,6 +145,8 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 		OwnerWrappedKey: wrappedDEK,
 		Tags:            []string{},
 		AccessList:      []objects.AccessEntry{},
+		IV:              iv,
+		PlaintextHash:   fileHash,
 	}
 
 	// Tags and Prefix
@@ -149,36 +164,9 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	ufoMeta.AddTags(tags...)
 
 	// Get Orbit
-	url := c.ActivePersona.BaseURL + api.RouteOrbit
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		url = ServerScheme + url
-	}
+	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
+	orbit, err := ufoSignedRequest[[]api.OrbitItem](c, "GET", orbitUrl, nil, nil)
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return fmt.Errorf("Error creating request %s", err)
-	}
-
-	timestamp := time.Now().Unix()
-	if err = c.Sign(req, timestamp, false); err != nil {
-		return fmt.Errorf("Error signing request: %w", err)
-	}
-
-	res, err := c.HTTPClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("Error executing request %w", err)
-	}
-	defer res.Body.Close()
-
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		return fmt.Errorf("Error reading response body %w", err)
-	}
-
-	var orbit []api.OrbitItem
-	if err = json.Unmarshal(data, &orbit); err != nil {
-		return fmt.Errorf("Error unmarshalling orbit data %w", err)
-	}
 	// make orbit into a map for faster searching for access list
 	orbitMap := make(map[string]api.OrbitItem)
 	for _, p := range orbit {
@@ -189,27 +177,50 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	accessListMap := make(map[string][]byte)
 	access := strings.Split(*accessList, ",")
 	for i := range access {
-		access[i] = strings.TrimSpace(access[i])
-		if _, found := orbitMap[access[i]]; !found {
+		recipientID := strings.TrimSpace(access[i])
+		if recipientID == "" {
+			continue
+		}
+		if _, found := orbitMap[recipientID]; !found {
 			fmt.Printf(
 				"Skipping '%s' - persona is not in your orbit. Use 'ufos orbit add -u <Persona_ID>'",
-				access[i],
+				recipientID,
 			)
 			continue
 		}
+		// Provide way to allow the recipient to decrypt the file
 		sharedSecret, err := crypto.GenerateSharedSecret(
 			c.ActivePersona.PrivateExchangeKey,
-			orbitMap[access[i]].ExchangeKey,
+			orbitMap[recipientID].ExchangeKey,
 		)
 		if err != nil {
-			return fmt.Errorf("Error generating shared secret %w", err)
+			return err
 		}
-		guestWrappingKey := crypto.DeriveWrappingKey(sharedSecret, access[i])
-		wrappedDEK, err := ufoMeta.GrantAccess(access[i], guestWrappingKey, dek)
+		// Derive the wrapping key for the recipient
+		guestWrappingKey := crypto.DeriveWrappingKey(sharedSecret, recipientID)
 		clear(sharedSecret)
+
+		// Wrap the DEK
+		wrappedDEK, err := ufoMeta.GrantAccess(recipientID, guestWrappingKey, dek)
 		clear(guestWrappingKey)
-		accessListMap[access[i]] = wrappedDEK
+		if err != nil {
+			return err
+		}
+
+		// Add IV and hash to the wrappedDEK to package up decryption info
+		envelope := make([]byte, 0, len(iv)+len(ufoMeta.PlaintextHash)+len(wrappedDEK))
+		envelope = append(envelope, iv...)
+		envelope = append(envelope, ufoMeta.PlaintextHash...)
+		envelope = append(envelope, wrappedDEK...)
+
+		accessListMap[recipientID] = envelope
 	}
+	defer func() {
+    for _, envelope := range accessListMap {
+        clear(envelope)
+    }
+    clear(accessListMap)
+	}()
 
 	// Encrypt the metadata
 	metaBytes, err := json.Marshal(ufoMeta)
@@ -221,10 +232,54 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	// Populate the UFOMetadataRequest struct
 	UFOReqData := api.UFOMetadataRequest{
 		PrefixHash: hashedPrefix,
-		SizeBytes:  int64(ufoMeta.SizeBytes) + crypto.CryptoMetadataV1Size,
+		SizeBytes:  int64(ufoMeta.SizeBytes),
 		Metadata:   metaBlob,
 		TagHashes:  hashedTags,
 		AccessList: accessListMap,
 	}
 
+	// Send the request to create the UFO database entry
+	url := c.ActivePersona.BaseURL + api.RouteUFOs
+	res, err := ufoSignedRequest[api.CreateUFOResponse](
+		c,
+		"POST",
+		url,
+		UFOReqData,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("Error sending createUFO request: %w", err)
+	}
+
+	// Send the file data for storage
+	pr, pw := io.Pipe()
+	go func() {
+		defer pw.Close()
+		// Set up the Block Cipher (AES-CTR)
+		block, err := aes.NewCipher(dek)
+		if err != nil {
+			pr.CloseWithError(err)
+			return
+		}
+
+		stream := cipher.NewCTR(block, iv)
+
+		// Set up the writer to encrypt and write streamed bytes
+		writer := &crypto.EncryptingWriter{W: pw, Stream: stream}
+
+		// Copy the bytes from disk into the pipe
+		if _, err := io.Copy(writer, file); err != nil {
+			pr.CloseWithError(err)
+			return
+		}
+	}()
+
+	streamUrl := url + "/" + res.ID
+	err = ufoStreamRequest(c, "PUT", streamUrl, pr, UFOReqData.SizeBytes, nil)
+	if err != nil {
+		return fmt.Errorf("Error sending UFO data: %w", err)
+	}
+
+	fmt.Printf("UFO %s uploaded successfully.\n", res.ID)
+	return nil
 }

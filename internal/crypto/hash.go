@@ -4,7 +4,10 @@ import (
 	"crypto/hmac"
 	"crypto/sha3"
 	"encoding/base64"
+	"fmt"
 	"hash"
+	"io"
+	"os"
 
 	"golang.org/x/crypto/argon2"
 )
@@ -69,4 +72,15 @@ func HashTag(salt []byte, tag string) string {
 	}, salt)
 	h.Write([]byte(tag))
 	return base64.StdEncoding.EncodeToString(h.Sum(nil))
+}
+
+// Returns hash of a file for verifying integrity after download/decrypt
+func HashFile(file *os.File) ([]byte, error) {
+	h := sha3.New256()
+	if _, err := io.Copy(h, file); err != nil {
+		return nil, fmt.Errorf("Error copying file for hash")
+	}
+
+	file.Seek(0, io.SeekStart) // reset pointer prior to upload
+	return h.Sum(nil), nil
 }
