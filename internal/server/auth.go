@@ -58,7 +58,7 @@ func (s *Server) auth(next http.Handler, requiresBodyHash bool) http.Handler {
 		if !ok {
 			// Ensure it must be a GET or HEAD for /api/ufos/{uuid}
 			ufoID := r.PathValue("uuid")
-			isAllowedMethod := r.Method == http.MethodGet || r.Method == http.MethodHead
+			isAllowedMethod := r.Method == http.MethodGet
 			isCorrectPath := strings.Contains(r.URL.Path, "/api/ufos/")
 			if !isAllowedMethod || !isCorrectPath || ufoID == "" {
 				respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)

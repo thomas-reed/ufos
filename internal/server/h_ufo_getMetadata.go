@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	"github.com/thomas-reed/ufos/internal/api"
-	"github.com/thomas-reed/ufos/internal/database"
 )
 
 func (s *Server) HandleGetUFOMetadata(w http.ResponseWriter, r *http.Request) {
@@ -36,22 +35,7 @@ func (s *Server) HandleGetUFOMetadata(w http.ResponseWriter, r *http.Request) {
 	// Construct headers
 	w.Header().Set("Content-Type", "application/octet-stream")
 	w.Header().Set("Content-Length", fmt.Sprintf("%d", ufo.SizeBytes))
-	if r.Header.Get(api.HeaderHost) == "" {
-		// Owner Path
-		w.Header().Set(api.HeaderMetadata, base64.StdEncoding.EncodeToString(ufo.Metadata))
-	} else {
-		// Guest Path: Fetch and send the Wrapped-Key header
-		wrappedKey, err := p.db.GetKeybyUFOIDAndPersonaID(
-			r.Context(),
-			database.GetKeybyUFOIDAndPersonaIDParams{
-				UfoID:     ufoID,
-				PersonaID: p.ID,
-			},
-		)
-		if err == nil {
-			w.Header().Set(api.HeaderWrappedKey, base64.StdEncoding.EncodeToString(wrappedKey))
-		}
-	}
+	w.Header().Set(api.HeaderMetadata, base64.StdEncoding.EncodeToString(ufo.Metadata))
 
 	w.WriteHeader(http.StatusOK)
 }
