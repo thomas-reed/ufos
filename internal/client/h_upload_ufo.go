@@ -53,7 +53,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	// If file wasn't in Args, prompt, and open the file
 	if *filePath == "" {
 		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter desired personfile name > ")
+		fmt.Print("Enter local filepath for file to upload > ")
 		if !scanner.Scan() {
 			return fmt.Errorf("Input interrupted!")
 		}
@@ -150,22 +150,21 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	}
 
 	// Tags and Prefix
-	tags := strings.Split(*tagList, ",")
 	searchSalt := crypto.DeriveSearchSalt(c.MasterKey, c.PersonaID)
 	defer clear(searchSalt)
 	// Get the hashed prefix
 	hashedPrefix := crypto.HashTag(searchSalt, *prefix)
 	// Make the list of hashed tags while cleaning the tags for storage in the metadata
-	hashedTags := make([]string, 0, len(tags))
-	for i := range tags {
-		tags[i] = strings.ToLower(strings.TrimSpace(tags[i]))
-		hashedTags = append(hashedTags, crypto.HashTag(searchSalt, tags[i]))
+	ufoMeta.UserTags = strings.Split(*tagList, ",")
+	ufoMeta.SyncTags()
+	hashedTags := make([]string, 0, len(ufoMeta.Tags))
+	for i := range ufoMeta.Tags {
+		hashedTags = append(hashedTags, crypto.HashTag(searchSalt, ufoMeta.Tags[i]))
 	}
-	ufoMeta.AddTags(tags...)
 
 	// Get Orbit
 	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
-	orbit, err := ufoSignedRequest[[]api.OrbitItem](c, "GET", orbitUrl, nil, nil)
+	orbit, err := ufoSignedRequest[[]api.OrbitItem](c, http.MethodGet, orbitUrl, nil, nil)
 
 	// make orbit into a map for faster searching for access list
 	orbitMap := make(map[string]api.OrbitItem)
@@ -216,10 +215,10 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 		accessListMap[recipientID] = envelope
 	}
 	defer func() {
-    for _, envelope := range accessListMap {
-        clear(envelope)
-    }
-    clear(accessListMap)
+		for _, envelope := range accessListMap {
+			clear(envelope)
+		}
+		clear(accessListMap)
 	}()
 
 	// Encrypt the metadata
@@ -242,7 +241,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	url := c.ActivePersona.BaseURL + api.RouteUFOs
 	res, err := ufoSignedRequest[api.CreateUFOResponse](
 		c,
-		"POST",
+		http.MethodPost,
 		url,
 		UFOReqData,
 		nil,

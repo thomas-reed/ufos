@@ -1,6 +1,7 @@
 package api
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/thomas-reed/ufos/internal/objects"
@@ -21,7 +22,7 @@ type UpdateUFOResponse struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-type UploadObjectResponse struct {
+type UploadUFOResponse struct {
 	ID     string            `json:"id"`
 	Status objects.UFOStatus `json:"status"`
 }
@@ -57,4 +58,17 @@ type OrbitItem struct {
 type AddToOrbitResponse struct {
 	PersonaID string    `json:"persona_id"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type HeaderDecoder interface {
+	DecodeHeader(http.Header) error
+}
+
+type UFOMetadataFromHeader struct {
+	MetadataBlob []byte `json:"metadataBlob"`
+}
+
+func (u *UFOMetadataFromHeader) DecodeHeader(h http.Header) error {
+	u.MetadataBlob = []byte(h.Get(HeaderMetadata))
+	return nil
 }

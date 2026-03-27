@@ -24,7 +24,8 @@ type ObjectMetadata struct {
 	OwnerID         string        `json:"owner_id"`          // Owner's persona ID
 	OwnerWrappedKey []byte        `json:"owner_wrapped_key"` // DEK encrypted with Owner's master Key
 	AccessList      []AccessEntry `json:"access_list"`       // List of recipients for sharing
-	Tags            []string      `json:"tags"`              // Human-readable tags
+	UserTags        []string      `json:"user_tags"`         // Human-readable tags provided by the user
+	Tags            []string      `json:"tags"`              // UserTags + system-generated tags added for extra searchability
 	IV              []byte        `json:"iv"`                // 16 bytes for AES-CTR
 	PlaintextHash   []byte        `json:"plaintext_hash"`    // For optional integrity check
 }
@@ -64,20 +65,19 @@ func (m *ObjectMetadata) RevokeAccess(recipientID string) {
 	}
 }
 
-func (m *ObjectMetadata) AddTags(tags ...string) {
+func (m *ObjectMetadata) SyncTags() {
 	tagMap := make(map[string]struct{})
-	// add existing tags to the map
-	for _, tag := range m.Tags {
-		tagMap[tag] = struct{}{}
+
+	// Add User-provided tags to the map
+	for _, tag := range m.UserTags {
+		tagMap[strings.ToLower(strings.TrimSpace(tag))] = struct{}{}
 	}
-	// add new tags
-	for _, tag := range tags {
-		tagMap[strings.ToLower(tag)] = struct{}{}
-	}
-	// add original name, prefix, and content type for exact matches
+
+	// Add system-generated tags for filename, prefix, content-type
 	tagMap[strings.ToLower(m.Name)] = struct{}{}
 	tagMap[strings.ToLower(m.Prefix)] = struct{}{}
 	tagMap[strings.ToLower(m.ContentType)] = struct{}{}
+
 	// add sanitized individual words from name and prefix
 	for _, word := range strings.Fields(cleanString(m.Name)) {
 		tagMap[strings.ToLower(word)] = struct{}{}

@@ -56,11 +56,11 @@ func (s *Server) auth(next http.Handler, requiresBodyHash bool) http.Handler {
 		personaID := r.Header.Get(api.HeaderPersona)
 		persona, ok := s.GetPersona(personaID)
 		if !ok {
-			// Ensure it must be a GET for /api/ufos/{uuid}
+			// Ensure it must be a GET or HEAD for /api/ufos/{uuid}
 			ufoID := r.PathValue("uuid")
-			if r.Method != http.MethodGet ||
-				!strings.Contains(r.URL.Path, "/api/ufos/") ||
-				ufoID == "" {
+			isAllowedMethod := r.Method == http.MethodGet || r.Method == http.MethodHead
+			isCorrectPath := strings.Contains(r.URL.Path, "/api/ufos/")
+			if !isAllowedMethod || !isCorrectPath || ufoID == "" {
 				respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
 				return
 			}
@@ -163,4 +163,3 @@ func (s *Server) auth(next http.Handler, requiresBodyHash bool) http.Handler {
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
-

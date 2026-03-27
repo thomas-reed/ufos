@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 
@@ -103,7 +104,7 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 	}
 	res, err := ufoSignedRequest[api.CreatePersonaResponse](
 		c,
-		"POST",
+		http.MethodPost,
 		url,
 		body,
 		header,

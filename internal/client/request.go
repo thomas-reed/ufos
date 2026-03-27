@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/thomas-reed/ufos/internal/api"
 )
 
 const (
@@ -107,6 +109,15 @@ func sendAndDecode[T any](c *Client, req *http.Request) (T, error) {
 
 	if res.StatusCode >= 400 {
 		return resData, fmt.Errorf("Server error (%d)", res.StatusCode)
+	}
+
+	// Handle Head requests (api.UFOMetadataFromHeader type)
+	if req.Method == http.MethodHead {
+		if decoder, ok := any(&resData).(api.HeaderDecoder); ok {
+			err := decoder.DecodeHeader(res.Header)
+			return resData, err
+		}
+		return resData, fmt.Errorf("HEAD request used with unsupported response type")
 	}
 
 	// Handle empty response bodies (like 204 No Content)

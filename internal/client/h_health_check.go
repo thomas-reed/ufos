@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/thomas-reed/ufos/internal/api"
@@ -31,7 +32,7 @@ func (c *Client) HandleHealthCheck(cmd Command) error {
 	}
 
 	url := *domain + api.RouteHealth
-	_, err := ufoPublicRequest[struct{}](c, "GET", url, nil, nil)
+	_, err := ufoPublicRequest[struct{}](c, http.MethodGet, url, nil, nil)
 	if err != nil {
 		return err
 	}

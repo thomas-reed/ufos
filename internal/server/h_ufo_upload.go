@@ -107,7 +107,7 @@ func (s *Server) HandleUploadUFO(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(
 		w,
 		http.StatusOK,
-		api.UploadObjectResponse{
+		api.UploadUFOResponse{
 			ID:     ufoID,
 			Status: objects.UFOStatus(res.UploadStatus),
 		},
