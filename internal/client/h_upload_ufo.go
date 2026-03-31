@@ -139,7 +139,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	ufoMeta := objects.ObjectMetadata{
 		Name:            info.Name(),
 		ContentType:     contentType,
-		SizeBytes:       uint64(info.Size()),
+		SizeBytes:       info.Size(),
 		Prefix:          *prefix,
 		OwnerID:         c.PersonaID,
 		OwnerWrappedKey: wrappedDEK,
@@ -149,30 +149,37 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 		PlaintextHash:   fileHash,
 	}
 
-	// Tags and Prefix
+	// Generate values for ufoReqData struct
 	searchSalt := crypto.DeriveSearchSalt(c.MasterKey, c.PersonaID)
 	defer clear(searchSalt)
-	// Get the hashed prefix
-	hashedPrefix := crypto.HashTag(searchSalt, *prefix)
+
+	// Get hashed Name
+	hashedName := crypto.HashTag(searchSalt, strings.ToLower(ufoMeta.Name))
+	// Get hashed Prefix
+	hashedPrefix := crypto.HashTag(searchSalt, strings.ToLower(*prefix))
+
 	// Make the list of hashed tags while cleaning the tags for storage in the metadata
 	ufoMeta.UserTags = strings.Split(*tagList, ",")
 	ufoMeta.SyncTags()
 	hashedTags := make([]string, 0, len(ufoMeta.Tags))
 	for i := range ufoMeta.Tags {
-		hashedTags = append(hashedTags, crypto.HashTag(searchSalt, ufoMeta.Tags[i]))
+		hashedTags = append(
+			hashedTags,
+			crypto.HashTag(searchSalt, ufoMeta.Tags[i]),
+		)
 	}
 
 	// Get Orbit
 	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
-	orbit, err := ufoSignedRequest[[]api.OrbitItem](c, http.MethodGet, orbitUrl, nil, nil)
+	orbit, _, err := ufoSignedRequest[[]api.OrbitItem](c, http.MethodGet, orbitUrl, nil, nil)
 
-	// make orbit into a map for faster searching for access list
+	// Make orbit into a map for faster searching for access list
 	orbitMap := make(map[string]api.OrbitItem)
 	for _, p := range orbit {
 		orbitMap[p.PersonaID] = p
 	}
 
-	// Access List
+	// Build Access List
 	accessListMap := make(map[string][]byte)
 	access := strings.Split(*accessList, ",")
 	for i := range access {
@@ -229,9 +236,10 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	metaBlob, err := crypto.Encrypt(c.MasterKey, metaBytes, crypto.CryptoSuiteV1)
 
 	// Populate the UFOMetadataRequest struct
-	UFOReqData := api.UFOMetadataRequest{
-		PrefixHash: hashedPrefix,
-		SizeBytes:  int64(ufoMeta.SizeBytes),
+	ufoReqData := api.UFOMetadataRequest{
+		NameHash:   &hashedName,
+		PrefixHash: &hashedPrefix,
+		SizeBytes:  &ufoMeta.SizeBytes,
 		Metadata:   metaBlob,
 		TagHashes:  hashedTags,
 		AccessList: accessListMap,
@@ -239,11 +247,11 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 
 	// Send the request to create the UFO database entry
 	url := c.ActivePersona.BaseURL + api.RouteUFOs
-	res, err := ufoSignedRequest[api.CreateUFOResponse](
+	res, _, err := ufoSignedRequest[api.CreateUFOResponse](
 		c,
 		http.MethodPost,
 		url,
-		UFOReqData,
+		ufoReqData,
 		nil,
 	)
 	if err != nil {
@@ -274,11 +282,16 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	}()
 
 	streamUrl := url + "/" + res.ID
-	err = ufoStreamRequest(c, "PUT", streamUrl, pr, UFOReqData.SizeBytes, nil)
+	err = ufoStreamRequest(c, http.MethodPut, streamUrl, pr, *ufoReqData.SizeBytes, nil)
 	if err != nil {
 		return fmt.Errorf("Error sending UFO data: %w", err)
 	}
-
 	fmt.Printf("UFO %s uploaded successfully.\n", res.ID)
+
+	// Create "folders" from the prefix in the server database for navigation
+	if err := c.CreatePrefixHierarchy(*prefix, searchSalt); err != nil {
+		return fmt.Errorf("Error building prefix hierarchy: %w", err)
+	}
+	fmt.Println("UFO securely stored!")
 	return nil
 }

@@ -13,9 +13,6 @@ const (
 	CryptoSuiteV1             // SHA3-256, AES-256-GCM
 	// CryptoSuiteV2					// some future packages
 )
-const (
-	CryptoMetadataV1Size = 17 // version (1 byte) + gcm.NonceSize (16 bytes)
-)
 
 // Returns a string of the CryptoSuite version info
 func (c CryptoSuite) String() string {

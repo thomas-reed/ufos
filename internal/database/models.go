@@ -25,6 +25,7 @@ type Request struct {
 
 type Ufo struct {
 	ID           string    `json:"id"`
+	NameHash     string    `json:"name_hash"`
 	PrefixHash   string    `json:"prefix_hash"`
 	SizeBytes    int64     `json:"size_bytes"`
 	UploadStatus string    `json:"upload_status"`

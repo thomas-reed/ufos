@@ -17,27 +17,27 @@ const (
 )
 
 // Signed, with body hash
-func ufoSignedRequest[T any](c *Client, method, url string, reqBody any, headers map[string]string) (T, error) {
+func ufoSignedRequest[T any](c *Client, method, url string, reqBody any, headers map[string]string) (T, int, error) {
 	req, err := buildJSONRequest(method, url, reqBody, headers)
 	if err != nil {
 		var zero T
-		return zero, err
+		return zero, 0, err
 	}
 
 	if err := c.Sign(req, time.Now().Unix(), reqBody != nil); err != nil {
 		var zero T
-		return zero, err
+		return zero, 0, err
 	}
 
 	return sendAndDecode[T](c, req)
 }
 
 // Unsigned
-func ufoPublicRequest[T any](c *Client, method, url string, reqBody any, headers map[string]string) (T, error) {
+func ufoPublicRequest[T any](c *Client, method, url string, reqBody any, headers map[string]string) (T, int, error) {
 	req, err := buildJSONRequest(method, url, reqBody, headers)
 	if err != nil {
 		var zero T
-		return zero, err
+		return zero, 0, err
 	}
 
 	return sendAndDecode[T](c, req)
@@ -99,34 +99,34 @@ func buildJSONRequest(method, url string, body any, headers map[string]string) (
 	return req, nil
 }
 
-func sendAndDecode[T any](c *Client, req *http.Request) (T, error) {
+func sendAndDecode[T any](c *Client, req *http.Request) (T, int, error) {
 	var resData T
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return resData, fmt.Errorf("Error sending request: %w", err)
+		return resData, res.StatusCode, fmt.Errorf("Error sending request: %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
-		return resData, fmt.Errorf("Server error (%d)", res.StatusCode)
+		return resData, res.StatusCode, fmt.Errorf("Server error")
 	}
 
 	// Handle Head requests (api.UFOMetadataFromHeader type)
 	if req.Method == http.MethodHead {
 		if decoder, ok := any(&resData).(api.HeaderDecoder); ok {
 			err := decoder.DecodeHeader(res.Header)
-			return resData, err
+			return resData, res.StatusCode, err
 		}
-		return resData, fmt.Errorf("HEAD request used with unsupported response type")
+		return resData, res.StatusCode, fmt.Errorf("HEAD request used with unsupported response type")
 	}
 
 	// Handle empty response bodies (like 204 No Content)
 	if res.StatusCode == http.StatusNoContent {
-		return resData, nil
+		return resData,res.StatusCode, nil
 	}
 
 	if err = json.NewDecoder(res.Body).Decode(&resData); err != nil {
-		return resData, fmt.Errorf("Error decoding response: %w", err)
+		return resData, res.StatusCode, fmt.Errorf("Error decoding response: %w", err)
 	}
-	return resData, nil
+	return resData, res.StatusCode, nil
 }

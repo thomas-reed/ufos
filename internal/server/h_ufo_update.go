@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/mattn/go-sqlite3"
 	"github.com/thomas-reed/ufos/internal/api"
 	"github.com/thomas-reed/ufos/internal/database"
 )
@@ -20,7 +21,6 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		)
 		return
 	}
-	ufoID := r.PathValue("uuid")
 
 	var req api.UFOMetadataRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -28,12 +28,29 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	ufoID := r.PathValue("uuid")
 	params := database.UpdateUFOParams{
 		ID:           ufoID,
-		PrefixHash:   sql.NullString{String: req.PrefixHash, Valid: req.PrefixHash != ""},
-		SizeBytes:    sql.NullInt64{Int64: req.SizeBytes, Valid: req.SizeBytes != 0},
-		Metadata:     req.Metadata,
 		UploadStatus: sql.NullString{Valid: false},
+		Metadata:     req.Metadata,
+	}
+	if req.NameHash != nil {
+		params.NameHash = sql.NullString{
+			String: *req.NameHash,
+			Valid:  true,
+		}
+	}
+	if req.PrefixHash != nil {
+		params.PrefixHash = sql.NullString{
+			String: *req.PrefixHash,
+			Valid:  true,
+		}
+	}
+	if req.SizeBytes != nil {
+		params.SizeBytes = sql.NullInt64{
+			Int64: *req.SizeBytes,
+			Valid: true,
+		}
 	}
 
 	// Set up db transaction
@@ -53,6 +70,19 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 	// Update with the transaction
 	updated, err := qtx.UpdateUFO(r.Context(), params)
 	if err != nil {
+		// Check if error is a unique constraint violation
+		if sqliteErr, ok := err.(sqlite3.Error); ok {
+			if sqliteErr.Code == sqlite3.ErrConstraint {
+				respondWithError(
+					w,
+					http.StatusConflict,
+					"UFO with that name and prefix already exists",
+					nil,
+				)
+				return
+			}
+		}
+		// Otherwise fallback for all other errors
 		respondWithError(w, http.StatusInternalServerError, "failed to update ufo", err)
 		return
 	}

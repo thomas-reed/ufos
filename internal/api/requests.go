@@ -17,8 +17,9 @@ const (
 
 // for use with CreateUFO, UpdateUFO
 type UFOMetadataRequest struct {
-	PrefixHash string            `json:"prefix_hash"`
-	SizeBytes  int64             `json:"size_bytes"`
+	NameHash   *string           `json:"name_hash"`
+	PrefixHash *string           `json:"prefix_hash"`
+	SizeBytes  *int64            `json:"size_bytes"`
 	Metadata   []byte            `json:"metadata"`
 	AccessList map[string][]byte `json:"access_list"` // map[persona_id]wrapped_key
 	TagHashes  []string          `json:"tag_hashes"`

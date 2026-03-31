@@ -32,11 +32,16 @@ func (c *Client) HandleHealthCheck(cmd Command) error {
 	}
 
 	url := *domain + api.RouteHealth
-	_, err := ufoPublicRequest[struct{}](c, http.MethodGet, url, nil, nil)
+	_, status, err := ufoPublicRequest[struct{}](c, http.MethodGet, url, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Server is up!")
+	switch status {
+	case http.StatusOK:
+		fmt.Println("Server is up!")
+	default:
+		fmt.Printf("Unexpected status code (%s)\n", status)
+	}
 	return nil
 }

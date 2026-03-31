@@ -102,7 +102,7 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 	header := map[string]string{
 		api.HeaderRegistration: *token,
 	}
-	res, err := ufoSignedRequest[api.CreatePersonaResponse](
+	res, _, err := ufoSignedRequest[api.CreatePersonaResponse](
 		c,
 		http.MethodPost,
 		url,

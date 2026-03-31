@@ -20,7 +20,7 @@ type ObjectMetadata struct {
 	Name            string        `json:"name"`              // "original_filename.ext"
 	ContentType     string        `json:"content_type"`      // "image/jpeg"
 	Prefix          string        `json:"prefix"`            // "Path" to file
-	SizeBytes       uint64        `json:"size_bytes"`        // Filesize in bytes
+	SizeBytes       int64         `json:"size_bytes"`        // Filesize in bytes
 	OwnerID         string        `json:"owner_id"`          // Owner's persona ID
 	OwnerWrappedKey []byte        `json:"owner_wrapped_key"` // DEK encrypted with Owner's master Key
 	AccessList      []AccessEntry `json:"access_list"`       // List of recipients for sharing
@@ -96,4 +96,19 @@ func (m *ObjectMetadata) SyncTags() {
 func cleanString(s string) string {
 	regex := regexp.MustCompile(`[^\p{L}\p{N}]+`)
 	return regex.ReplaceAllString(s, " ")
+}
+
+func GetPrefixSegments(prefix string) []string {
+	folders := strings.Split(prefix, "/")
+	cleanedFolders := make([]string, 0, len(folders))
+	for _, folder := range folders {
+		if folder != "" {
+			cleanedFolders = append(cleanedFolders, "/"+folder)
+		}
+	}
+	segments := make([]string, 0, len(cleanedFolders))
+	for i := range cleanedFolders {
+		segments = append(segments, strings.Join(cleanedFolders[:i+1], ""))
+	}
+	return segments
 }

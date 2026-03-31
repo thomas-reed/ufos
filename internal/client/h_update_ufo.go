@@ -24,6 +24,8 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 	fs.StringVar(name, "n", "", "alias for --name")
 	id := fs.String("id", "", "The id of the file you want to update")
 	fs.StringVar(id, "i", "", "alias for --id")
+	filename := fs.String("filename", "", "The new filename if you'd like to rename the file on the server")
+	fs.StringVar(filename, "f", "", "alias for --filename")
 	prefix := fs.String("prefix", "", "The 'folder' path on the server you want to move the file to, separated by '/'. Surround with quotes if the folder path contains any spaces")
 	fs.StringVar(prefix, "p", "", "alias for --prefix")
 	tagList := fs.String("tags", "", "The tags you wish to include for searching.  Surround multiple tags with quotes, separated by commas")
@@ -51,9 +53,9 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 		return fmt.Errorf("Enter id of UFO you wish to update")
 	}
 
-	// If prefix, tags, or access not in Args, error out
-	if *prefix == "" && *tagList == "" && *accessList == "" {
-		return fmt.Errorf("Nothing entered to update - modify prefix, tags, or access list")
+	// If filename, prefix, tags, or access not in Args, error out
+	if *filename == "" && *prefix == "" && *tagList == "" && *accessList == "" {
+		return fmt.Errorf("Nothing entered to update - modify filename, prefix, tags, or access list")
 	}
 
 	// get master password to decrypt vault, find persona
@@ -73,7 +75,7 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 
 	// Get UFO Metadata
 	ufoUrl := c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
-	ufoRes, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
+	ufoRes, _, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
 
 	metadataBytes, err := base64.StdEncoding.DecodeString(string(ufoRes.MetadataBlob))
 	if err != nil {
@@ -90,34 +92,61 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 	searchSalt := crypto.DeriveSearchSalt(c.MasterKey, c.PersonaID)
 	defer clear(searchSalt)
 
+	// Populate the UFOMetadataRequest struct
+	ufoReqData := api.UFOMetadataRequest{}
+
+	tagsChanged := false
+	// Filename change
+	if *filename != "" {
+		ufoMeta.Name = *filename
+		hashedName := crypto.HashTag(searchSalt, strings.ToLower(*filename))
+		ufoReqData.NameHash = &hashedName
+		tagsChanged = true
+	}
+
 	// Prefix change
-	var hashedPrefix string
 	if *prefix != "" {
 		ufoMeta.Prefix = *prefix
-		hashedPrefix = crypto.HashTag(searchSalt, *prefix)
+		hashedPrefix := crypto.HashTag(searchSalt, strings.ToLower(*prefix))
+		ufoReqData.PrefixHash = &hashedPrefix
+		tagsChanged = true
+
+		// If prefix changed, need to make sure the folders exist
+		if err := c.CreatePrefixHierarchy(*prefix, searchSalt); err != nil {
+			return fmt.Errorf("Error building prefix hierarchy: %w", err)
+		}
 	}
 
-	// Tags
-	var hashedTags []string
+	// Tags change
 	if *tagList != "" {
 		ufoMeta.UserTags = strings.Split(*tagList, ",")
+		tagsChanged = true
 	}
-
-	ufoMeta.SyncTags()
+	if tagsChanged {
+		ufoMeta.SyncTags()
+		hashedTags := make([]string, 0, len(ufoMeta.Tags))
+		for i := range ufoMeta.Tags {
+			hashedTags = append(
+				hashedTags,
+				crypto.HashTag(searchSalt, ufoMeta.Tags[i]),
+			)
+		}
+		ufoReqData.TagHashes = hashedTags
+	}
 
 	// Get Orbit
 	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
-	orbit, err := ufoSignedRequest[[]api.OrbitItem](c, http.MethodGet, orbitUrl, nil, nil)
+	orbit, _, err := ufoSignedRequest[[]api.OrbitItem](c, http.MethodGet, orbitUrl, nil, nil)
 
-	// make orbit into a map for faster searching for access list
+	// Make orbit into a map for faster searching for access list
 	orbitMap := make(map[string]api.OrbitItem)
 	for _, p := range orbit {
 		orbitMap[p.PersonaID] = p
 	}
 
-	// Access List
-	accessListMap := make(map[string][]byte)
+	// Access List change
 	if *accessList != "" {
+		accessListMap := make(map[string][]byte)
 		access := strings.Split(*accessList, ",")
 		for i := range access {
 			recipientID := strings.TrimSpace(access[i])
@@ -172,6 +201,7 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 			}
 			clear(accessListMap)
 		}()
+		ufoReqData.AccessList = accessListMap
 	}
 
 	// Encrypt the metadata
@@ -180,23 +210,18 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 		return fmt.Errorf("Error marshalling metadata: %w", err)
 	}
 	metaBlob, err := crypto.Encrypt(c.MasterKey, metaBytes, crypto.CryptoSuiteV1)
-
-	// Populate the UFOMetadataRequest struct
-	UFOReqData := api.UFOMetadataRequest{
-		PrefixHash: hashedPrefix,
-		SizeBytes:  int64(ufoMeta.SizeBytes),
-		Metadata:   metaBlob,
-		TagHashes:  hashedTags,
-		AccessList: accessListMap,
+	if err != nil {
+		return err
 	}
+	ufoReqData.Metadata = metaBlob
 
 	// Send the request to create the UFO database entry
 	url := c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
-	res, err := ufoSignedRequest[api.UpdateUFOResponse](
+	res, _, err := ufoSignedRequest[api.UpdateUFOResponse](
 		c,
 		http.MethodPatch,
 		url,
-		UFOReqData,
+		ufoReqData,
 		nil,
 	)
 	if err != nil {
@@ -204,5 +229,6 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 	}
 
 	fmt.Printf("UFO %s updated successfully.\n", res.ID)
+
 	return nil
 }

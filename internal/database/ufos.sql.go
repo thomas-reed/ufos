@@ -14,6 +14,7 @@ import (
 const createUFO = `-- name: CreateUFO :one
 INSERT INTO ufos (
   id,
+  name_hash,
   prefix_hash,
   size_bytes,
   upload_status,
@@ -27,6 +28,7 @@ VALUES (
   ?,
   ?,
   ?,
+  ?,
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
 )
@@ -35,6 +37,7 @@ RETURNING id, created_at
 
 type CreateUFOParams struct {
 	ID           string `json:"id"`
+	NameHash     string `json:"name_hash"`
 	PrefixHash   string `json:"prefix_hash"`
 	SizeBytes    int64  `json:"size_bytes"`
 	UploadStatus string `json:"upload_status"`
@@ -49,6 +52,7 @@ type CreateUFORow struct {
 func (q *Queries) CreateUFO(ctx context.Context, arg CreateUFOParams) (CreateUFORow, error) {
 	row := q.db.QueryRowContext(ctx, createUFO,
 		arg.ID,
+		arg.NameHash,
 		arg.PrefixHash,
 		arg.SizeBytes,
 		arg.UploadStatus,
@@ -56,6 +60,57 @@ func (q *Queries) CreateUFO(ctx context.Context, arg CreateUFOParams) (CreateUFO
 	)
 	var i CreateUFORow
 	err := row.Scan(&i.ID, &i.CreatedAt)
+	return i, err
+}
+
+const createUFOFolder = `-- name: CreateUFOFolder :one
+INSERT INTO ufos (
+  id,
+  name_hash,
+  prefix_hash,
+  size_bytes,
+  upload_status,
+  metadata,
+  created_at,
+  updated_at
+)
+VALUES (
+  ?,
+  ?,
+  ?,
+  -1,
+  "active",
+  ?,
+  CURRENT_TIMESTAMP,
+  CURRENT_TIMESTAMP
+)
+ON CONFLICT(name_hash, prefix_hash) DO UPDATE SET
+    updated_at = EXCLUDED.updated_at
+RETURNING id, created_at, updated_at
+`
+
+type CreateUFOFolderParams struct {
+	ID         string `json:"id"`
+	NameHash   string `json:"name_hash"`
+	PrefixHash string `json:"prefix_hash"`
+	Metadata   []byte `json:"metadata"`
+}
+
+type CreateUFOFolderRow struct {
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func (q *Queries) CreateUFOFolder(ctx context.Context, arg CreateUFOFolderParams) (CreateUFOFolderRow, error) {
+	row := q.db.QueryRowContext(ctx, createUFOFolder,
+		arg.ID,
+		arg.NameHash,
+		arg.PrefixHash,
+		arg.Metadata,
+	)
+	var i CreateUFOFolderRow
+	err := row.Scan(&i.ID, &i.CreatedAt, &i.UpdatedAt)
 	return i, err
 }
 
@@ -77,7 +132,7 @@ func (q *Queries) DeleteUFO(ctx context.Context, id string) (DeleteUFORow, error
 }
 
 const getUFO = `-- name: GetUFO :one
-SELECT id, prefix_hash, size_bytes, upload_status, metadata, created_at, updated_at FROM ufos WHERE id = ?
+SELECT id, name_hash, prefix_hash, size_bytes, upload_status, metadata, created_at, updated_at FROM ufos WHERE id = ?
 `
 
 func (q *Queries) GetUFO(ctx context.Context, id string) (Ufo, error) {
@@ -85,6 +140,32 @@ func (q *Queries) GetUFO(ctx context.Context, id string) (Ufo, error) {
 	var i Ufo
 	err := row.Scan(
 		&i.ID,
+		&i.NameHash,
+		&i.PrefixHash,
+		&i.SizeBytes,
+		&i.UploadStatus,
+		&i.Metadata,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
+const getUFOByNameAndParent = `-- name: GetUFOByNameAndParent :one
+SELECT id, name_hash, prefix_hash, size_bytes, upload_status, metadata, created_at, updated_at FROM ufos WHERE name_hash = ? AND prefix_hash = ?
+`
+
+type GetUFOByNameAndParentParams struct {
+	NameHash   string `json:"name_hash"`
+	PrefixHash string `json:"prefix_hash"`
+}
+
+func (q *Queries) GetUFOByNameAndParent(ctx context.Context, arg GetUFOByNameAndParentParams) (Ufo, error) {
+	row := q.db.QueryRowContext(ctx, getUFOByNameAndParent, arg.NameHash, arg.PrefixHash)
+	var i Ufo
+	err := row.Scan(
+		&i.ID,
+		&i.NameHash,
 		&i.PrefixHash,
 		&i.SizeBytes,
 		&i.UploadStatus,
@@ -96,7 +177,7 @@ func (q *Queries) GetUFO(ctx context.Context, id string) (Ufo, error) {
 }
 
 const getUFOsByParent = `-- name: GetUFOsByParent :many
-SELECT id, prefix_hash, size_bytes, upload_status, metadata, created_at, updated_at FROM ufos WHERE prefix_hash = ?
+SELECT id, name_hash, prefix_hash, size_bytes, upload_status, metadata, created_at, updated_at FROM ufos WHERE prefix_hash = ?
 `
 
 func (q *Queries) GetUFOsByParent(ctx context.Context, prefixHash string) ([]Ufo, error) {
@@ -110,6 +191,7 @@ func (q *Queries) GetUFOsByParent(ctx context.Context, prefixHash string) ([]Ufo
 		var i Ufo
 		if err := rows.Scan(
 			&i.ID,
+			&i.NameHash,
 			&i.PrefixHash,
 			&i.SizeBytes,
 			&i.UploadStatus,
@@ -131,7 +213,7 @@ func (q *Queries) GetUFOsByParent(ctx context.Context, prefixHash string) ([]Ufo
 }
 
 const getUFOsByTag = `-- name: GetUFOsByTag :many
-SELECT ufos.id, ufos.prefix_hash, ufos.size_bytes, ufos.upload_status, ufos.metadata, ufos.created_at, ufos.updated_at
+SELECT ufos.id, ufos.name_hash, ufos.prefix_hash, ufos.size_bytes, ufos.upload_status, ufos.metadata, ufos.created_at, ufos.updated_at
 FROM ufos
 INNER JOIN ufo_tags ON ufo_tags.ufo_id = ufos.id
 WHERE ufo_tags.tag_hash = ?
@@ -148,6 +230,7 @@ func (q *Queries) GetUFOsByTag(ctx context.Context, tagHash string) ([]Ufo, erro
 		var i Ufo
 		if err := rows.Scan(
 			&i.ID,
+			&i.NameHash,
 			&i.PrefixHash,
 			&i.SizeBytes,
 			&i.UploadStatus,
@@ -197,16 +280,18 @@ func (q *Queries) UpdateStatus(ctx context.Context, arg UpdateStatusParams) (Upd
 const updateUFO = `-- name: UpdateUFO :one
 UPDATE ufos
 SET
-  prefix_hash = COALESCE(?2, prefix_hash),
-  size_bytes = COALESCE(?3, size_bytes),
-  metadata = COALESCE(?4, metadata),
-  upload_status = COALESCE(?5, upload_status),
+  name_hash = COALESCE(?2, name_hash),
+  prefix_hash = COALESCE(?3, prefix_hash),
+  size_bytes = COALESCE(?4, size_bytes),
+  metadata = COALESCE(?5, metadata),
+  upload_status = COALESCE(?6, upload_status),
   updated_at = CURRENT_TIMESTAMP
 WHERE id = ?
 RETURNING id, updated_at
 `
 
 type UpdateUFOParams struct {
+	NameHash     sql.NullString `json:"name_hash"`
 	PrefixHash   sql.NullString `json:"prefix_hash"`
 	SizeBytes    sql.NullInt64  `json:"size_bytes"`
 	Metadata     []byte         `json:"metadata"`
@@ -221,6 +306,7 @@ type UpdateUFORow struct {
 
 func (q *Queries) UpdateUFO(ctx context.Context, arg UpdateUFOParams) (UpdateUFORow, error) {
 	row := q.db.QueryRowContext(ctx, updateUFO,
+		arg.NameHash,
 		arg.PrefixHash,
 		arg.SizeBytes,
 		arg.Metadata,

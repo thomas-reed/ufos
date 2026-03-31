@@ -3,12 +3,14 @@
 -- Tracks the encrypted files stored on the server.
 CREATE TABLE ufos (
     id TEXT PRIMARY KEY,            -- Unique UUID for the file
+    name_hash TEXT NOT NULL,        -- Hashed name of UFO for determining uniqueness inside a "folder"
     prefix_hash TEXT NOT NULL,      -- Hashed prefix for folder-like navigation
     size_bytes INTEGER NOT NULL,    -- size of file on disk - "folder" will be -1
     upload_status TEXT NOT NULL,    -- pending, uploading, active, failed
-    metadata BLOB,                  -- Encrypted JSON (filename, type, etc.)
+    metadata BLOB NOT NULL,         -- Encrypted JSON (filename, type, etc.)
     created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL
+    updated_at DATETIME NOT NULL,
+    UNIQUE(prefix_hash, name_hash)  -- Ensures 2 "files" of the with the same name can't be in the same "folder" 
 ) WITHOUT ROWID;
 
 -- Allows for searching by many hashed keywords.
