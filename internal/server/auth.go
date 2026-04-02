@@ -97,7 +97,7 @@ func (s *Server) auth(next http.Handler, requiresBodyHash bool) http.Handler {
 				return
 			}
 			// Guest is now authorized, merge guest and host info into persona object for hash check
-			personaData, err := host.db.GetOrbit(r.Context(), personaID)
+			personaData, err := host.db.GetFromOrbit(r.Context(), personaID)
 			if err != nil {
 				respondWithError(
 					w,

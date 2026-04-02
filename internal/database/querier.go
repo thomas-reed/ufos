@@ -19,8 +19,8 @@ type Querier interface {
 	DeleteUFO(ctx context.Context, id string) (DeleteUFORow, error)
 	DeleteUFOAccess(ctx context.Context, ufoID string) error
 	DeleteUFOTags(ctx context.Context, ufoID string) error
+	GetFromOrbit(ctx context.Context, personaID string) (Orbit, error)
 	GetKeybyUFOIDAndPersonaID(ctx context.Context, arg GetKeybyUFOIDAndPersonaIDParams) ([]byte, error)
-	GetOrbit(ctx context.Context, personaID string) (Orbit, error)
 	GetOrbitList(ctx context.Context) ([]Orbit, error)
 	GetRequestByID(ctx context.Context, id string) (Request, error)
 	GetTagsForUFO(ctx context.Context, ufoID string) ([]UfoTag, error)

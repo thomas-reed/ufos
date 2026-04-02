@@ -72,9 +72,9 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 			)
 			return
 		}
-		status = http.StatusCreated		// assuming folder was created
+		status = http.StatusCreated // assuming folder was created
 		if ufo.CreatedAt != ufo.UpdatedAt {
-			status = http.StatusOK			// folder already existed
+			status = http.StatusOK // folder already existed
 		}
 		ufoRes.ID = ufo.ID
 		ufoRes.CreatedAt = ufo.CreatedAt

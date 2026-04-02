@@ -48,7 +48,7 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 		name = &n
 	}
 
-	// If id or file wasn't in Args, error out
+	// If id wasn't in Args, error out
 	if *id == "" {
 		return fmt.Errorf("Enter id of UFO you wish to update")
 	}
@@ -187,10 +187,21 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 				return err
 			}
 
-			// Add IV and hash to the wrappedDEK to package up decryption info
-			envelope := make([]byte, 0, len(ufoMeta.IV)+len(ufoMeta.PlaintextHash)+len(wrappedDEK))
+			// Add IV, hash, and filename to the wrappedDEK to package up decryption info
+			nameBytes := []byte(ufoMeta.Name)
+			envelope := make(
+				[]byte,
+				0,
+				len(ufoMeta.IV)+
+					len(ufoMeta.PlaintextHash)+
+					len(nameBytes)+
+					len(nameBytes)+
+					len(wrappedDEK),
+			)
 			envelope = append(envelope, ufoMeta.IV...)
 			envelope = append(envelope, ufoMeta.PlaintextHash...)
+			envelope = append(envelope, byte(len(nameBytes))) // 1 byte for length
+			envelope = append(envelope, nameBytes...)
 			envelope = append(envelope, wrappedDEK...)
 
 			accessListMap[recipientID] = envelope

@@ -43,9 +43,9 @@ func ufoPublicRequest[T any](c *Client, method, url string, reqBody any, headers
 	return sendAndDecode[T](c, req)
 }
 
-// Signed, no nody hash
-func ufoStreamRequest(c *Client, method, url string, body io.Reader, size int64, headers map[string]string) error {
-	req, err := http.NewRequest(method, url, body)
+// Signed, no nody hash, for uploading files
+func ufoUploadStream(c *Client, url string, body io.Reader, size int64, headers map[string]string) error {
+	req, err := http.NewRequest(http.MethodPut, url, body)
 	if err != nil {
 		return fmt.Errorf("Error building request: %w", err)
 	}
@@ -72,6 +72,33 @@ func ufoStreamRequest(c *Client, method, url string, body io.Reader, size int64,
 	return nil
 }
 
+// Signed, no nody hash, for downloading files, returns raw request - Handler must close request Body!
+func ufoDownloadStream(c *Client, url string, headers map[string]string) (*http.Response, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error building request: %w", err)
+	}
+
+	req.Header.Set("Content-Type", "application/octet-stream")
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	if err := c.Sign(req, time.Now().Unix(), false); err != nil {
+		return nil, err
+	}
+
+	res, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	if res.StatusCode >= 400 {
+		return res, fmt.Errorf("Request returned status (%d)", res.StatusCode)
+	}
+	return res, nil
+}
+
 // Shared Helpers
 
 func buildJSONRequest(method, url string, body any, headers map[string]string) (*http.Request, error) {
@@ -81,7 +108,7 @@ func buildJSONRequest(method, url string, body any, headers map[string]string) (
 		bodyReader = bytes.NewReader(data)
 	}
 
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+	if !strings.HasPrefix(url, "http") {
 		url = serverScheme + url
 	}
 
@@ -122,7 +149,7 @@ func sendAndDecode[T any](c *Client, req *http.Request) (T, int, error) {
 
 	// Handle empty response bodies (like 204 No Content)
 	if res.StatusCode == http.StatusNoContent {
-		return resData,res.StatusCode, nil
+		return resData, res.StatusCode, nil
 	}
 
 	if err = json.NewDecoder(res.Body).Decode(&resData); err != nil {

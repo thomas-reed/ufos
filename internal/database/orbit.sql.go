@@ -66,12 +66,12 @@ func (q *Queries) DeleteFromOrbit(ctx context.Context, personaID string) (string
 	return persona_id, err
 }
 
-const getOrbit = `-- name: GetOrbit :one
+const getFromOrbit = `-- name: GetFromOrbit :one
 SELECT persona_id, signing_key, exchange_key, metadata, created_at, updated_at FROM orbit WHERE persona_id = ?
 `
 
-func (q *Queries) GetOrbit(ctx context.Context, personaID string) (Orbit, error) {
-	row := q.db.QueryRowContext(ctx, getOrbit, personaID)
+func (q *Queries) GetFromOrbit(ctx context.Context, personaID string) (Orbit, error) {
+	row := q.db.QueryRowContext(ctx, getFromOrbit, personaID)
 	var i Orbit
 	err := row.Scan(
 		&i.PersonaID,

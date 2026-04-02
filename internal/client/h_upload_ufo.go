@@ -213,10 +213,21 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 			return err
 		}
 
-		// Add IV and hash to the wrappedDEK to package up decryption info
-		envelope := make([]byte, 0, len(iv)+len(ufoMeta.PlaintextHash)+len(wrappedDEK))
+		// Add IV, hash, and filename to the wrappedDEK to package up decryption info
+		nameBytes := []byte(ufoMeta.Name)
+		envelope := make(
+			[]byte,
+			0,
+			len(iv)+
+				len(ufoMeta.PlaintextHash)+
+				len(nameBytes)+
+				len(nameBytes)+
+				len(wrappedDEK),
+		)
 		envelope = append(envelope, iv...)
 		envelope = append(envelope, ufoMeta.PlaintextHash...)
+		envelope = append(envelope, byte(len(nameBytes))) // 1 byte for length
+		envelope = append(envelope, nameBytes...)
 		envelope = append(envelope, wrappedDEK...)
 
 		accessListMap[recipientID] = envelope
@@ -282,7 +293,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	}()
 
 	streamUrl := url + "/" + res.ID
-	err = ufoStreamRequest(c, http.MethodPut, streamUrl, pr, *ufoReqData.SizeBytes, nil)
+	err = ufoUploadStream(c, streamUrl, pr, *ufoReqData.SizeBytes, nil)
 	if err != nil {
 		return fmt.Errorf("Error sending UFO data: %w", err)
 	}

@@ -28,7 +28,7 @@ RETURNING persona_id, updated_at;
 -- name: GetOrbitList :many
 SELECT * FROM orbit;
 
--- name: GetOrbit :one
+-- name: GetFromOrbit :one
 SELECT * FROM orbit WHERE persona_id = ?;
 
 -- name: DeleteFromOrbit :one

@@ -14,6 +14,10 @@ const (
 	// CryptoSuiteV2					// some future packages
 )
 
+const (
+	CryptoMetadataV1Size = 17 // 1 byte for version, 16 bytes for nonce
+)
+
 // Returns a string of the CryptoSuite version info
 func (c CryptoSuite) String() string {
 	switch c {
