@@ -53,6 +53,9 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 	default:
 		return fmt.Errorf("Error parsing domain from given name")
 	}
+	if strings.HasSuffix(domain, "/") {
+		domain = domain[:len(domain)-1]
+	}
 
 	// if token wasn't in Args, prompt
 	if *token == "" {
