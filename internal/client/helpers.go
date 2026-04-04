@@ -16,9 +16,9 @@ func (c *Client) printUFOList(list []api.UFOItem) error {
 	// (Params: output, minwidth, tabwidth, padding, padchar, flags)
 	w := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	
-	// 2. Print the Header
+	// Print the Header
 	fmt.Fprintln(w, "TYPE\tID\tPATH\tSIZE\tTAGS")
-	fmt.Fprintln(w, "----\t--\t----\t----\t----")
+  fmt.Fprintln(w, "----\t--\t----\t----\t----")
 	for _, ufo := range list {
 		metadataBytes, err := crypto.Decrypt(c.MasterKey, ufo.Metadata)
 		if err != nil {
@@ -36,20 +36,20 @@ func (c *Client) printUFOList(list []api.UFOItem) error {
 				sizeStr = "-" // Folders don't have a binary size
 		}
 
-		// 3. Format tags into a single string
+		// Format tags into a single string
 		tagsStr := strings.Join(metadata.Tags, ", ")
 		
-		// 4. Construct the full path
+		// Construct the full path
 		fullPath := metadata.Prefix
 		if !strings.HasSuffix(fullPath, "/") {
 				fullPath += "/"
 		}
 		fullPath += metadata.Name
 
-		// 5. Write row to the tabwriter (note the \t for tabs)
+		// Write row to the tabwriter
 		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n", 
 				typeName, 
-				ufo.ID[:8], // Just show the short UUID for brevity
+				ufo.ID,
 				fullPath, 
 				sizeStr, 
 				tagsStr,
