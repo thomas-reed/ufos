@@ -30,9 +30,9 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	fs.StringVar(filePath, "f", "", "alias for --file")
 	prefix := fs.String("prefix", "", "The 'folder' path on the server you want to upload the file to, separated by '/'. Surround with quotes if the folder path contains any spaces")
 	fs.StringVar(prefix, "p", "", "alias for --prefix")
-	tagList := fs.String("tags", "", "The tags you wish to include for searching.  Surround multiple tags with quotes, separated by commas")
+	tagList := fs.String("tags", "", "The tags you wish to include for searching. Surround multiple tags with quotes, separated by commas")
 	fs.StringVar(tagList, "t", "", "alias for --tags")
-	accessList := fs.String("access", "", "The Persona IDs of anyone you'd like to have downloadable access to the file.  Surround multiple IDs with quotes, separated by commas")
+	accessList := fs.String("access", "", "The Persona IDs of anyone you'd like to have downloadable access to the file. Surround multiple IDs with quotes, separated by commas")
 	fs.StringVar(accessList, "a", "", "alias for --access")
 
 	if err := fs.Parse(cmd.Args); err != nil {
@@ -61,10 +61,9 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 		filePath = &fp
 	}
 
-	// If prefix wasn't in Args, default to root '/'
-	if *prefix == "" {
-		p := "/"
-		prefix = &p
+	// If prefix doesn't start with '/', prepend '/' - handles empty case
+	if !strings.HasPrefix(*prefix, "/") {
+		*prefix = "/" + *prefix
 	}
 
 	// get master password to decrypt vault, find persona

@@ -32,7 +32,7 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 	fs.StringVar(id, "i", "", "alias for --id")
 	host := fs.String("host", "", "The Persona ID of the user hosting the UFO when downloading from someone else's server")
 	fs.StringVar(host, "h", "", "alias for --host")
-	to := fs.String("to", "", "The local path where you want to save the file you are downloading.  Defaults to the current directory")
+	to := fs.String("to", "", "The local path where you want to save the file you are downloading. Defaults to the current directory")
 	fs.StringVar(to, "t", "", "alias for --to")
 
 	if err := fs.Parse(cmd.Args); err != nil {
@@ -52,7 +52,7 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 
 	// If id wasn't in Args, error out
 	if *id == "" {
-		return fmt.Errorf("Enter id of UFO you wish to download")
+		return fmt.Errorf("Enter id of UFO you wish to download using '--id' or '-i'")
 	}
 
 	// get master password to decrypt vault, find persona

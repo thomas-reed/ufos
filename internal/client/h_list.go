@@ -2,22 +2,21 @@ package client
 
 import (
 	"bufio"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
 	"github.com/thomas-reed/ufos/internal/api"
 	"github.com/thomas-reed/ufos/internal/crypto"
-	"github.com/thomas-reed/ufos/internal/objects"
 	"golang.org/x/term"
 )
 
 func (c *Client) HandleList(cmd Command) error {
 	// Set up flags and parse
-	fs := flag.NewFlagSet("download", flag.ContinueOnError)
+	fs := flag.NewFlagSet("list", flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
@@ -65,9 +64,11 @@ func (c *Client) HandleList(cmd Command) error {
 
 	// Get hashed Prefix
 	hashedPrefix := crypto.HashTag(searchSalt, strings.ToLower(*prefix))
+	queryValue := url.Values{}
+	queryValue.Add("prefix", hashedPrefix)
 
-	// Send the request to create the UFO database entry
-	url := c.ActivePersona.BaseURL + api.RouteUFOs + "?prefix=" + hashedPrefix
+	// Send the request to list UFOs
+	url := c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValue.Encode()
 	listRes, _, err := ufoSignedRequest[[]api.UFOItem](
 		c,
 		http.MethodGet,
@@ -82,25 +83,9 @@ func (c *Client) HandleList(cmd Command) error {
 		fmt.Println("0 results.")
 		return nil
 	}
-	fmt.Printf("%s UFOs:\n", *prefix)
-	for _, ufo := range listRes {
-		metadataBytes, err := crypto.Decrypt(c.MasterKey, ufo.Metadata)
-		if err != nil {
-			return err
-		}
-		var metadata objects.ObjectMetadata
-		if err = json.Unmarshal(metadataBytes, &metadata); err != nil {
-			return fmt.Errorf("Error unmarshalling metadata: %w", err)
-		}
-		typeName := "FILE"
-		if metadata.SizeBytes < 0 {
-			typeName = "DIR "
-		}
-		fmt.Printf("[%s] %-20s %10d bytes\n", typeName, metadata.Name, metadata.SizeBytes)
-		fmt.Printf("Tags:\n%v\n", metadata.Tags)
-		fmt.Printf("Access list:\n%v\n", metadata.AccessList)
-		clear(metadataBytes)
-		metadata = objects.ObjectMetadata{}
+	fmt.Printf("%d UFOs found in %s:\n", len(listRes), *prefix)
+	if err = c.printUFOList(listRes); err != nil {
+		return err
 	}
 	return nil
 }

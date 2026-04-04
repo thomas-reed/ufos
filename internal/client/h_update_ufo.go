@@ -28,9 +28,9 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 	fs.StringVar(filename, "f", "", "alias for --filename")
 	prefix := fs.String("prefix", "", "The 'folder' path on the server you want to move the file to, separated by '/'. Surround with quotes if the folder path contains any spaces")
 	fs.StringVar(prefix, "p", "", "alias for --prefix")
-	tagList := fs.String("tags", "", "The tags you wish to include for searching.  Surround multiple tags with quotes, separated by commas")
+	tagList := fs.String("tags", "", "The tags you wish to include for searching. Surround multiple tags with quotes, separated by commas")
 	fs.StringVar(tagList, "t", "", "alias for --tags")
-	accessList := fs.String("access", "", "The Persona IDs of anyone you'd like to have downloadable access to the file.  Surround multiple IDs with quotes, separated by commas")
+	accessList := fs.String("access", "", "The Persona IDs of anyone you'd like to have downloadable access to the file. Surround multiple IDs with quotes, separated by commas")
 	fs.StringVar(accessList, "a", "", "alias for --access")
 
 	if err := fs.Parse(cmd.Args); err != nil {
@@ -50,12 +50,12 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 
 	// If id wasn't in Args, error out
 	if *id == "" {
-		return fmt.Errorf("Enter id of UFO you wish to update")
+		return fmt.Errorf("Enter id of UFO you wish to update using '--id' or '-i'")
 	}
 
 	// If filename, prefix, tags, or access not in Args, error out
 	if *filename == "" && *prefix == "" && *tagList == "" && *accessList == "" {
-		return fmt.Errorf("Nothing entered to update - modify filename, prefix, tags, or access list")
+		return fmt.Errorf("Nothing entered to update - modify filename, prefix, tags, or access list. Use 'ufos update help' for more information")
 	}
 
 	// get master password to decrypt vault, find persona
