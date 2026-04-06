@@ -28,7 +28,7 @@ type UploadUFOResponse struct {
 }
 
 // List, Search return a []UFOItem
-type UFOItem struct {
+type UFO struct {
 	ID         string            `json:"id"`
 	PrefixHash string            `json:"prefix_hash"`
 	SizeBytes  int64             `json:"size_bytes"`
@@ -46,7 +46,7 @@ type CreatePersonaResponse struct {
 	ID string `json:"ID"`
 }
 
-type OrbitItem struct {
+type Satellite struct {
 	PersonaID   string    `json:"persona_id"`
 	SigningKey  []byte    `json:"signing_key"`
 	ExchangeKey []byte    `json:"exchange_key"`

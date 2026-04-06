@@ -29,7 +29,7 @@ func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ufoMap := make(map[string]api.UFOItem)
+	ufoMap := make(map[string]api.UFO)
 	for _, tag := range tagList {
 		dbRows, err := p.db.GetUFOsByTag(r.Context(), tag)
 		if err != nil {
@@ -42,7 +42,7 @@ func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, row := range dbRows {
-			ufoMap[row.ID] = api.UFOItem{
+			ufoMap[row.ID] = api.UFO{
 				ID:         row.ID,
 				PrefixHash: row.PrefixHash,
 				SizeBytes:  row.SizeBytes,
@@ -54,7 +54,7 @@ func (s *Server) HandleSearch(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ufoList := make([]api.UFOItem, 0, len(ufoMap))
+	ufoList := make([]api.UFO, 0, len(ufoMap))
 	for _, ufo := range ufoMap {
 		ufoList = append(ufoList, ufo)
 	}

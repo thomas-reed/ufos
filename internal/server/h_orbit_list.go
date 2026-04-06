@@ -28,9 +28,9 @@ func (s *Server) HandleOrbitList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orbitList := make([]api.OrbitItem, 0, len(list))
+	orbitList := make([]api.Satellite, 0, len(list))
 	for i := range list {
-		orbitList = append(orbitList, api.OrbitItem{
+		orbitList = append(orbitList, api.Satellite{
 			PersonaID:   list[i].PersonaID,
 			SigningKey:  list[i].SigningKey,
 			ExchangeKey: list[i].ExchangeKey,

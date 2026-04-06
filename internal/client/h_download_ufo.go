@@ -155,7 +155,7 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 
 		// Get Persona data from Orbit
 		orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + hostPersonaID
-		personaData, _, err := ufoSignedRequest[api.OrbitItem](c, http.MethodGet, orbitUrl, nil, nil)
+		personaData, _, err := ufoSignedRequest[api.Satellite](c, http.MethodGet, orbitUrl, nil, nil)
 		if err != nil {
 			return err
 		}

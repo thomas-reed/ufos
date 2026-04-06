@@ -61,10 +61,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 		filePath = &fp
 	}
 
-	// If prefix doesn't start with '/', prepend '/' - handles empty case
-	if !strings.HasPrefix(*prefix, "/") {
-		*prefix = "/" + *prefix
-	}
+	formatPrefix(prefix)
 
 	// get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
@@ -170,10 +167,10 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 
 	// Get Orbit
 	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
-	orbit, _, err := ufoSignedRequest[[]api.OrbitItem](c, http.MethodGet, orbitUrl, nil, nil)
+	orbit, _, err := ufoSignedRequest[[]api.Satellite](c, http.MethodGet, orbitUrl, nil, nil)
 
 	// Make orbit into a map for faster searching for access list
-	orbitMap := make(map[string]api.OrbitItem)
+	orbitMap := make(map[string]api.Satellite)
 	for _, p := range orbit {
 		orbitMap[p.PersonaID] = p
 	}

@@ -33,7 +33,7 @@ func (s *Server) HandleGetFromOrbit(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(
 		w,
 		http.StatusOK,
-		api.OrbitItem{
+		api.Satellite{
 			PersonaID:   personaData.PersonaID,
 			SigningKey:  personaData.SigningKey,
 			ExchangeKey: personaData.ExchangeKey,

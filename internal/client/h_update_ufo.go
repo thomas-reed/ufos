@@ -106,6 +106,7 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 
 	// Prefix change
 	if *prefix != "" {
+		formatPrefix(prefix)
 		ufoMeta.Prefix = *prefix
 		hashedPrefix := crypto.HashTag(searchSalt, strings.ToLower(*prefix))
 		ufoReqData.PrefixHash = &hashedPrefix
@@ -136,10 +137,10 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 
 	// Get Orbit
 	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
-	orbit, _, err := ufoSignedRequest[[]api.OrbitItem](c, http.MethodGet, orbitUrl, nil, nil)
+	orbit, _, err := ufoSignedRequest[[]api.Satellite](c, http.MethodGet, orbitUrl, nil, nil)
 
 	// Make orbit into a map for faster searching for access list
-	orbitMap := make(map[string]api.OrbitItem)
+	orbitMap := make(map[string]api.Satellite)
 	for _, p := range orbit {
 		orbitMap[p.PersonaID] = p
 	}

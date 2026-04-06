@@ -69,7 +69,7 @@ func (c *Client) HandleList(cmd Command) error {
 
 	// Send the request to list UFOs
 	url := c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValue.Encode()
-	listRes, _, err := ufoSignedRequest[[]api.UFOItem](
+	listRes, _, err := ufoSignedRequest[[]api.UFO](
 		c,
 		http.MethodGet,
 		url,
