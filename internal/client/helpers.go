@@ -63,9 +63,9 @@ func (c *Client) printUFOList(list []api.UFO) error {
 	return w.Flush()
 }
 
-func (c *Client) printUFODetails(item api.UFO) error {
+func (c *Client) printUFODetails(ufo api.UFOMetadataFromHeader) error {
 	// Decrypt UFO metadata
-	ufoMetaBytes, err := crypto.Decrypt(c.MasterKey, item.Metadata)
+	ufoMetaBytes, err := crypto.Decrypt(c.MasterKey, ufo.MetadataBlob)
 	if err != nil {
 		return err
 	}
@@ -119,8 +119,12 @@ func (c *Client) printUFODetails(item api.UFO) error {
 	fmt.Println("Tags:")
 	fmt.Println(ufoMetadata.UserTags)
 	fmt.Println("Access List:")
-	for _, contact := range accessList {
-		fmt.Printf("%s %s\n", contact.FirstName, contact.LastName)
+	if len(accessList) == 0 {
+    fmt.Println("- Private (No guests authorized)")
+	} else {
+		for _, contact := range accessList {
+			fmt.Printf("- %s %s\n", contact.FirstName, contact.LastName)
+		}
 	}
 
 	ufoMetadata = objects.ObjectMetadata{}

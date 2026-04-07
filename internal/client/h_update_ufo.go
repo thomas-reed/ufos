@@ -87,7 +87,9 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 	}
 
 	var ufoMeta objects.ObjectMetadata
-	json.Unmarshal(metadata, &ufoMeta)
+	if err = json.Unmarshal(metadata, &ufoMeta); err != nil {
+		return fmt.Errorf("Error unmarshalling metadata: %w", err)
+	}
 
 	searchSalt := crypto.DeriveSearchSalt(c.MasterKey, c.PersonaID)
 	defer clear(searchSalt)

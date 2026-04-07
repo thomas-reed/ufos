@@ -29,6 +29,7 @@ func main() {
 	cmds.Register("update", c.HandleUpdateUFO)
 	cmds.Register("upload", c.HandleUploadUFO)
 	cmds.Register("orbit", c.HandleOrbit)
+	cmds.Register("info", c.HandleUFOInfo)
 
 	// parse cmd line arguments
 	if len(os.Args) < 2 {
