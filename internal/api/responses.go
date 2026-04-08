@@ -38,6 +38,8 @@ type UFO struct {
 	UpdatedAt  time.Time         `json:"updated_at"`
 }
 
+type EmptyResponse struct{}
+
 type InitPersonaResponse struct {
 	RegistrationToken string `json:"registration_token"`
 }

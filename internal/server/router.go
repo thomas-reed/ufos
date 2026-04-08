@@ -15,7 +15,6 @@ func (s *Server) Router() *http.ServeMux {
 	mux.HandleFunc("POST "+api.RouteRegister, s.HandleCreatePersona)
 
 	// PROTECTED BRANCH
-	// Handle json requests
 	mux.Handle("POST "+api.RouteInit, s.Authenticate(http.HandlerFunc(s.HandleInitPersona)))
 	mux.Handle("GET "+api.RouteUFOs, s.Authenticate(http.HandlerFunc(s.HandleList)))
 	mux.Handle("POST "+api.RouteUFOs, s.Authenticate(http.HandlerFunc(s.HandleCreateUFO)))
@@ -27,6 +26,8 @@ func (s *Server) Router() *http.ServeMux {
 	mux.Handle("GET "+api.RouteOrbit, s.Authenticate(http.HandlerFunc(s.HandleOrbitList)))
 	mux.Handle("GET "+api.RouteOrbit+"/{id}", s.Authenticate(http.HandlerFunc(s.HandleGetFromOrbit)))
 	mux.Handle("DELETE "+api.RouteOrbit+"/{id}", s.Authenticate(http.HandlerFunc(s.HandleRemoveFromOrbit)))
+	// Protected through Orbit verification
+	mux.HandleFunc("GET "+api.RouteRegister+"/{id}", s.HandleGetPersonaKeys)
 	// Handle streaming requests
 	mux.Handle("PUT "+api.RouteUFOs+"/{uuid}", s.AuthenticateStream(http.HandlerFunc(s.HandleUploadUFO)))
 	mux.Handle("GET "+api.RouteUFOs+"/{uuid}", s.AuthenticateStream(http.HandlerFunc(s.HandleDownloadUFO)))

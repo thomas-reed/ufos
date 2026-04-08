@@ -1,9 +1,11 @@
 package client
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"text/tabwriter"
@@ -19,6 +21,7 @@ func formatPrefix(prefix *string) {
 		*prefix = "/"
 		return
 	}
+	*prefix = strings.ToLower(*prefix)
 	if !strings.HasPrefix(*prefix, "/") {
 		*prefix = "/" + *prefix
 	}
@@ -129,4 +132,60 @@ func (c *Client) printUFODetails(ufo api.UFOMetadataFromHeader) error {
 
 	ufoMetadata = objects.ObjectMetadata{}
 	return nil
+}
+
+func (c *Client) getRecursiveIDs(folder api.UFOMetadataFromHeader, searchSalt []byte) ([]string, error) {
+	// Get UFO Metadata to get the plaintext Prefix
+	metadataBytes, err := base64.StdEncoding.DecodeString(string(folder.MetadataBlob))
+	if err != nil {
+		return nil, fmt.Errorf("Error decoding metadata: %w", err)
+	}
+	metadata, err := crypto.Decrypt(c.MasterKey, metadataBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	var ufoMeta objects.ObjectMetadata
+	if err = json.Unmarshal(metadata, &ufoMeta); err != nil {
+		return nil, fmt.Errorf("Error unmarshalling metadata: %w", err)
+	}
+	
+	// Build the hashedPath for this folder's children
+	folderPrefix := ufoMeta.Prefix + ufoMeta.Name
+	formatPrefix(&folderPrefix)
+	hashedPrefix := crypto.HashTag(searchSalt, folderPrefix)
+	
+	// List children
+	queryValue := url.Values{}
+	queryValue.Add("prefix", hashedPrefix)
+
+	// Send the request to list UFOs
+	url := c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValue.Encode()
+	children, _, err := ufoSignedRequest[[]api.UFO](
+		c,
+		http.MethodGet,
+		url,
+		nil,
+		nil,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting UFO list for %s: %w", folderPrefix, err)
+	}
+	
+	ids := []string{}
+	
+	for _, child := range children {
+		ids = append(ids, child.ID)
+		if child.SizeBytes < 0 {
+			// It's a folder, Recurse
+			childMeta := api.UFOMetadataFromHeader{
+				MetadataBlob: child.Metadata,
+			}
+			subIDs, err := c.getRecursiveIDs(childMeta, searchSalt)
+			if err != nil { return nil, err }
+			ids = append(ids, subIDs...)
+		}
+	}
+	
+	return ids, nil
 }

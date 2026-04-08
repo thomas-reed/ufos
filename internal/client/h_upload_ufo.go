@@ -152,7 +152,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	// Get hashed Name
 	hashedName := crypto.HashTag(searchSalt, strings.ToLower(ufoMeta.Name))
 	// Get hashed Prefix
-	hashedPrefix := crypto.HashTag(searchSalt, strings.ToLower(*prefix))
+	hashedPrefix := crypto.HashTag(searchSalt, *prefix)
 
 	// Make the list of hashed tags while cleaning the tags for storage in the metadata
 	ufoMeta.UserTags = strings.Split(*tagList, ",")

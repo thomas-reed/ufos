@@ -72,7 +72,7 @@ func (c *Client) HandleSearch(cmd Command) error {
 	}
 
 	// Send the request to search for UFOs
-	url := c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValues.Encode()
+	url := c.ActivePersona.BaseURL + api.RouteSearch + "?" + queryValues.Encode()
 	listRes, _, err := ufoSignedRequest[[]api.UFO](
 		c,
 		http.MethodGet,

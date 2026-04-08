@@ -17,7 +17,7 @@ func (c *Client) HandleUFOInfo(cmd Command) error {
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
-	id := fs.String("id", "", "The id of the file you want the detailed info for")
+	id := fs.String("id", "", "The id of the UFO you want the detailed info for")
 	fs.StringVar(id, "i", "", "alias for --id")
 
 	if err := fs.Parse(cmd.Args); err != nil {
@@ -55,7 +55,7 @@ func (c *Client) HandleUFOInfo(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
 
-	// Get UFO Metadata
+	// Get UFO Metadata and print
 	ufoUrl := c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
 	ufoRes, _, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
 

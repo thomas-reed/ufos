@@ -110,7 +110,7 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 	if *prefix != "" {
 		formatPrefix(prefix)
 		ufoMeta.Prefix = *prefix
-		hashedPrefix := crypto.HashTag(searchSalt, strings.ToLower(*prefix))
+		hashedPrefix := crypto.HashTag(searchSalt, *prefix)
 		ufoReqData.PrefixHash = &hashedPrefix
 		tagsChanged = true
 
