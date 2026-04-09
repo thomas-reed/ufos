@@ -8,6 +8,7 @@ package database
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -212,15 +213,33 @@ func (q *Queries) GetUFOsByParent(ctx context.Context, prefixHash string) ([]Ufo
 	return items, nil
 }
 
-const getUFOsByTag = `-- name: GetUFOsByTag :many
+const getUFOsByTags = `-- name: GetUFOsByTags :many
 SELECT ufos.id, ufos.name_hash, ufos.prefix_hash, ufos.size_bytes, ufos.upload_status, ufos.metadata, ufos.created_at, ufos.updated_at
 FROM ufos
 INNER JOIN ufo_tags ON ufo_tags.ufo_id = ufos.id
-WHERE ufo_tags.tag_hash = ?
+WHERE ufo_tags.tag_hash IN (/*SLICE:tags*/?)
+GROUP BY ufos.id
+HAVING COUNT(DISTINCT ufo_tags.tag_hash) = CAST(?2 AS INTEGER)
 `
 
-func (q *Queries) GetUFOsByTag(ctx context.Context, tagHash string) ([]Ufo, error) {
-	rows, err := q.db.QueryContext(ctx, getUFOsByTag, tagHash)
+type GetUFOsByTagsParams struct {
+	Tags     []string `json:"tags"`
+	TagCount int64    `json:"tag_count"`
+}
+
+func (q *Queries) GetUFOsByTags(ctx context.Context, arg GetUFOsByTagsParams) ([]Ufo, error) {
+	query := getUFOsByTags
+	var queryParams []interface{}
+	if len(arg.Tags) > 0 {
+		for _, v := range arg.Tags {
+			queryParams = append(queryParams, v)
+		}
+		query = strings.Replace(query, "/*SLICE:tags*/?", strings.Repeat(",?", len(arg.Tags))[1:], 1)
+	} else {
+		query = strings.Replace(query, "/*SLICE:tags*/?", "NULL", 1)
+	}
+	queryParams = append(queryParams, arg.TagCount)
+	rows, err := q.db.QueryContext(ctx, query, queryParams...)
 	if err != nil {
 		return nil, err
 	}

@@ -69,18 +69,20 @@ RETURNING id, upload_status;
 -- name: GetUFO :one
 SELECT * FROM ufos WHERE id = ?;
 
+-- name: DeleteUFO :one
+DELETE FROM ufos WHERE id = ?
+RETURNING id, size_bytes;
+
 -- name: GetUFOsByParent :many
 SELECT * FROM ufos WHERE prefix_hash = ?;
 
 -- name: GetUFOByNameAndParent :one
 SELECT * FROM ufos WHERE name_hash = ? AND prefix_hash = ?;
 
--- name: DeleteUFO :one
-DELETE FROM ufos WHERE id = ?
-RETURNING id, size_bytes;
-
--- name: GetUFOsByTag :many
+-- name: GetUFOsByTags :many
 SELECT ufos.*
 FROM ufos
 INNER JOIN ufo_tags ON ufo_tags.ufo_id = ufos.id
-WHERE ufo_tags.tag_hash = ?;
+WHERE ufo_tags.tag_hash IN (sqlc.slice('tags'))
+GROUP BY ufos.id
+HAVING COUNT(DISTINCT ufo_tags.tag_hash) = CAST(sqlc.arg('tag_count') AS INTEGER);

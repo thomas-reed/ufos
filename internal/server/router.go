@@ -21,7 +21,6 @@ func (s *Server) Router() *http.ServeMux {
 	mux.Handle("HEAD "+api.RouteUFOs+"/{uuid}", s.Authenticate(http.HandlerFunc(s.HandleGetUFOMetadata)))
 	mux.Handle("PATCH "+api.RouteUFOs+"/{uuid}", s.Authenticate(http.HandlerFunc(s.HandleUpdateUFO)))
 	mux.Handle("DELETE "+api.RouteUFOs+"/{uuid}", s.Authenticate(http.HandlerFunc(s.HandleRemoveUFO)))
-	mux.Handle("GET "+api.RouteSearch, s.Authenticate(http.HandlerFunc(s.HandleSearch)))
 	mux.Handle("POST "+api.RouteOrbit, s.Authenticate(http.HandlerFunc(s.HandleAddToOrbit)))
 	mux.Handle("GET "+api.RouteOrbit, s.Authenticate(http.HandlerFunc(s.HandleOrbitList)))
 	mux.Handle("GET "+api.RouteOrbit+"/{id}", s.Authenticate(http.HandlerFunc(s.HandleGetFromOrbit)))

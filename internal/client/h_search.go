@@ -22,6 +22,8 @@ func (c *Client) HandleSearch(cmd Command) error {
 	fs.StringVar(name, "n", "", "alias for --name")
 	tagList := fs.String("tags", "", "The tags you wish to search for. Surround multiple tags with quotes, separated by commas")
 	fs.StringVar(tagList, "t", "", "alias for --tags")
+	prefix := fs.String("prefix", "", "The prefix (folder) you'd like to list. Default is '/' (root)")
+	fs.StringVar(prefix, "p", "", "alias for --prefix")
 
 	if err := fs.Parse(cmd.Args); err != nil {
 		return err
@@ -64,6 +66,12 @@ func (c *Client) HandleSearch(cmd Command) error {
 
 	// Get list of hashed Tags
 	queryValues := url.Values{}
+	// if prefix exists, format it and add to query params
+	if *prefix != "" {
+		formatPrefix(prefix)
+		hashedPrefix := crypto.HashTag(searchSalt, *prefix)
+		queryValues.Add("prefix", hashedPrefix)
+	}
 	tags := strings.Split(*tagList, ",")
 	for _, tag := range tags {
 		tag = strings.ToLower(strings.TrimSpace(tag))
@@ -72,7 +80,7 @@ func (c *Client) HandleSearch(cmd Command) error {
 	}
 
 	// Send the request to search for UFOs
-	url := c.ActivePersona.BaseURL + api.RouteSearch + "?" + queryValues.Encode()
+	url := c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValues.Encode()
 	listRes, _, err := ufoSignedRequest[[]api.UFO](
 		c,
 		http.MethodGet,

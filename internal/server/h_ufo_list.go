@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/thomas-reed/ufos/internal/api"
+	"github.com/thomas-reed/ufos/internal/database"
 	"github.com/thomas-reed/ufos/internal/objects"
 )
 
@@ -19,25 +20,42 @@ func (s *Server) HandleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	prefix := r.URL.Query().Get("prefix")
-	if prefix == "" {
+	tagList := r.URL.Query()["tag"]
+	if prefix == "" && len(tagList) == 0 {
 		respondWithError(
 			w,
 			http.StatusBadRequest,
-			"no prefix provided",
+			"no prefix or tags provided",
 			nil,
 		)
 		return
 	}
 
-	list, err := p.db.GetUFOsByParent(r.Context(), prefix)
-	if err != nil {
-		respondWithError(
-			w,
-			http.StatusInternalServerError,
-			"db search error",
-			err,
-		)
-		return
+	var list []database.Ufo
+	var err error
+
+	if prefix != "" && len(tagList) == 0 { // Prefix-only
+		list, err = p.db.GetUFOsByParent(r.Context(), prefix)
+		if err != nil {
+			respondWithError(
+				w,
+				http.StatusInternalServerError,
+				"db search error",
+				err,
+			)
+			return
+		}
+	} else if prefix == "" && len(tagList) > 0 { // Tags-only
+		list, err = p.db.GetUFOsByTags(r.Context(), database.GetUFOsByTagsParams{
+			Tags:     tagList,
+			TagCount: int64(len(tagList)),
+		})
+	} else { // Prefix and Tags
+		tagList = append(tagList, prefix)
+		list, err = p.db.GetUFOsByTags(r.Context(), database.GetUFOsByTagsParams{
+			Tags:     append(tagList),
+			TagCount: int64(len(tagList)),
+		})
 	}
 
 	ufoList := make([]api.UFO, 0, len(list))

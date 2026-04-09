@@ -28,7 +28,7 @@ type Querier interface {
 	GetUFOAccessForUser(ctx context.Context, arg GetUFOAccessForUserParams) (int64, error)
 	GetUFOByNameAndParent(ctx context.Context, arg GetUFOByNameAndParentParams) (Ufo, error)
 	GetUFOsByParent(ctx context.Context, prefixHash string) ([]Ufo, error)
-	GetUFOsByTag(ctx context.Context, tagHash string) ([]Ufo, error)
+	GetUFOsByTags(ctx context.Context, arg GetUFOsByTagsParams) ([]Ufo, error)
 	GetUsersForUFO(ctx context.Context, ufoID string) ([]UfoAccess, error)
 	NewRequest(ctx context.Context, id string) error
 	UpdateOrbitMetadata(ctx context.Context, arg UpdateOrbitMetadataParams) (UpdateOrbitMetadataRow, error)

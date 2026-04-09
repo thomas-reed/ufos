@@ -6,7 +6,6 @@ const (
 	RouteRegister = "/api/personas"
 	RouteUFOs     = "/api/ufos"
 	RouteOrbit    = "/api/orbit"
-	RouteSearch   = "/api/tags"
 
 	HeaderRegistration = "X-UFO-Registration"
 	HeaderTimestamp    = "X-UFO-Timestamp"

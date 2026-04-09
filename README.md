@@ -73,7 +73,7 @@ UFOs is a **Zero-Trust, Decentralized, and Social Filesystem** designed for sove
 - `DELETE /api/ufos/{uuid}`: Permanent removal of a UFO and its indices.
 
 ### Discovery & Social
-- `GET /api/ufos`: List UFOs at a given `prefix` (hashed)
+- `GET /api/ufos`: List UFOs at a given `prefix` or with provided `tags` (hashed)
 - `GET /api/tags`: Query for UFOs with given `tags` (hashed)
 - `GET /api/orbit`: Retrieve authorized satellites for the active persona.
 - `POST /api/orbit`: Add new satellite for the active persona's orbit.
