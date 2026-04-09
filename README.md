@@ -45,7 +45,7 @@ UFOs is a **Zero-Trust, Decentralized, and Social Filesystem** designed for sove
 | `update` | `n, i, f, p, t, a` | Modify name, path, tags, or access list for a given UFO. |
 | `download` | `n, i, h, t` | Download/stream from a UFOs server. |
 | `list` | `n, p` | List the UFO hierarchy for a specific prefix. |
-| `search` | `n, t` | Find UFOs globally using one or more hashed tags. |
+| `search` | `n, p, t` | Find UFOs globally using one or more hashed tags. |
 | `info` | `n, i` | View detailed metadata and access lists for a specific UFO. |
 | `remove` | `n, i` | Remove a UFO or recursively remove a directory tree. |
 | `orbit add` | - | Add a satellite (a fully qualified persona - `id@domain`) to your social orbit. |
@@ -74,7 +74,6 @@ UFOs is a **Zero-Trust, Decentralized, and Social Filesystem** designed for sove
 
 ### Discovery & Social
 - `GET /api/ufos`: List UFOs at a given `prefix` or with provided `tags` (hashed)
-- `GET /api/tags`: Query for UFOs with given `tags` (hashed)
 - `GET /api/orbit`: Retrieve authorized satellites for the active persona.
 - `POST /api/orbit`: Add new satellite for the active persona's orbit.
 - `GET /api/orbit/{id}`: Retrieve a specific satellite's public keys and metadata.
