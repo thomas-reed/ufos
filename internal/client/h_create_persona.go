@@ -101,7 +101,7 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 		ExchangeKey: c.ActivePersona.PublicExchangeKey,
 	})
 	body := bytes.NewReader(data)
-	url := domain + api.RouteRegister
+	url := domain + api.RoutePersonas
 	header := map[string]string{
 		api.HeaderRegistration: *token,
 	}

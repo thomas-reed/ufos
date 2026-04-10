@@ -3,7 +3,7 @@ package api
 const (
 	RouteHealth   = "/healthz"
 	RouteInit     = "/api/init"
-	RouteRegister = "/api/personas"
+	RoutePersonas = "/api/personas"
 	RouteUFOs     = "/api/ufos"
 	RouteOrbit    = "/api/orbit"
 

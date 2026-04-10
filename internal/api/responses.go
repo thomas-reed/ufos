@@ -27,6 +27,27 @@ type UploadUFOResponse struct {
 	Status objects.UFOStatus `json:"status"`
 }
 
+type EmptyResponse struct{}
+
+type InitPersonaResponse struct {
+	RegistrationToken string `json:"registration_token"`
+}
+
+type CreatePersonaResponse struct {
+	ID string `json:"ID"`
+}
+
+type AddToOrbitResponse struct {
+	PersonaID string    `json:"persona_id"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type PersonaKeysResponse struct {
+	PersonaID   string    `json:"persona_id"`
+	SigningKey  []byte    `json:"signing_key"`
+	ExchangeKey []byte    `json:"exchange_key"`
+}
+
 // List, Search return a []UFOItem
 type UFO struct {
 	ID         string            `json:"id"`
@@ -38,16 +59,6 @@ type UFO struct {
 	UpdatedAt  time.Time         `json:"updated_at"`
 }
 
-type EmptyResponse struct{}
-
-type InitPersonaResponse struct {
-	RegistrationToken string `json:"registration_token"`
-}
-
-type CreatePersonaResponse struct {
-	ID string `json:"ID"`
-}
-
 type Satellite struct {
 	PersonaID   string    `json:"persona_id"`
 	SigningKey  []byte    `json:"signing_key"`
@@ -55,11 +66,6 @@ type Satellite struct {
 	Metadata    []byte    `json:"metadata"`
 	CreatedAt   time.Time `json:"created_at"`
 	UpdatedAt   time.Time `json:"updated_at"`
-}
-
-type AddToOrbitResponse struct {
-	PersonaID string    `json:"persona_id"`
-	CreatedAt time.Time `json:"created_at"`
 }
 
 type HeaderDecoder interface {

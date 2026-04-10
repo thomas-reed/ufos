@@ -11,8 +11,9 @@ func (s *Server) Router() *http.ServeMux {
 
 	// PUBLIC BRANCH
 	mux.HandleFunc("GET /healthz", HandleHealth)
+	mux.HandleFunc("GET "+api.RoutePersonas+"/{id}", s.HandleGetPersonaKeys)
 	// Protected by Registration token
-	mux.HandleFunc("POST "+api.RouteRegister, s.HandleCreatePersona)
+	mux.HandleFunc("POST "+api.RoutePersonas, s.HandleCreatePersona)
 
 	// PROTECTED BRANCH
 	mux.Handle("POST "+api.RouteInit, s.Authenticate(http.HandlerFunc(s.HandleInitPersona)))
@@ -25,8 +26,7 @@ func (s *Server) Router() *http.ServeMux {
 	mux.Handle("GET "+api.RouteOrbit, s.Authenticate(http.HandlerFunc(s.HandleOrbitList)))
 	mux.Handle("GET "+api.RouteOrbit+"/{id}", s.Authenticate(http.HandlerFunc(s.HandleGetFromOrbit)))
 	mux.Handle("DELETE "+api.RouteOrbit+"/{id}", s.Authenticate(http.HandlerFunc(s.HandleRemoveFromOrbit)))
-	// Protected through Orbit verification
-	mux.HandleFunc("GET "+api.RouteRegister+"/{id}", s.HandleGetPersonaKeys)
+	
 	// Handle streaming requests
 	mux.Handle("PUT "+api.RouteUFOs+"/{uuid}", s.AuthenticateStream(http.HandlerFunc(s.HandleUploadUFO)))
 	mux.Handle("GET "+api.RouteUFOs+"/{uuid}", s.AuthenticateStream(http.HandlerFunc(s.HandleDownloadUFO)))
