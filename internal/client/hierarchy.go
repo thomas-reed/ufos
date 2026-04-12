@@ -21,7 +21,7 @@ func (c *Client) CreatePrefixHierarchy(prefix string, searchSalt []byte) error {
 		folderName := folders[len(folders)-1]
 		hashedFolderName := crypto.HashTag(searchSalt, strings.ToLower(folderName))
 		// Get prefix and hash it
-		folderPrefix := strings.Split(s, folderName)[0]
+		folderPrefix, _ := strings.CutSuffix(s, folderName)
 		hashedFolderPrefix := crypto.HashTag(searchSalt, strings.ToLower(folderPrefix))
 
 		// Create the struct

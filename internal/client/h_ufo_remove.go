@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"flag"
@@ -30,12 +29,10 @@ func (c *Client) HandleRemoveUFO(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter desired persona name > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		n, err := getInput("your persona name")
+		if err != nil {
+			return err
 		}
-		n := scanner.Text()
 		name = &n
 	}
 
@@ -86,13 +83,11 @@ func (c *Client) HandleRemoveUFO(cmd Command) error {
 
 	// Desired UFO is a folder - alert the user for recursive removal
 	if ufoMeta.SizeBytes < 0 {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Println("UFO ID given is a folder. Remove ALL UFOs associated with that folder?")
-		fmt.Print("Enter UFO ID again to confirm > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		ufoConfirm, err := getInput("your persona name")
+		if err != nil {
+			return err
 		}
-		ufoConfirm := scanner.Text()
+		
 		if *id != ufoConfirm {
 			return fmt.Errorf("Confirmation ID does not match! Cancelling request")
 		}

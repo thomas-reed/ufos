@@ -29,29 +29,21 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter desired persona name > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		n, err := getInput("your persona name")
+		if err != nil {
+			return err
 		}
-		n := scanner.Text()
 		name = &n
 	}
 	// get Domain from name, or prompt
-	splitName := strings.Split(*name, "@")
-	domain := ""
-	switch len(splitName) {
-	case 1:
+	_, domain, ok := strings.Cut(*name, "@")
+	if !ok {
 		scanner := bufio.NewScanner(os.Stdin)
 		fmt.Print("Enter your desired UFOs domain > ")
 		if !scanner.Scan() {
 			return fmt.Errorf("Input interrupted!")
 		}
 		domain = scanner.Text()
-	case 2:
-		domain = splitName[1]
-	default:
-		return fmt.Errorf("Error parsing domain from given name")
 	}
 	if strings.HasSuffix(domain, "/") {
 		domain = domain[:len(domain)-1]
@@ -59,12 +51,10 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 
 	// if token wasn't in Args, prompt
 	if *token == "" {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter registration token > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		t, err := getInput("registration token")
+		if err != nil {
+			return err
 		}
-		t := scanner.Text()
 		token = &t
 	}
 

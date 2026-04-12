@@ -53,7 +53,7 @@ func (s *Server) HandleList(w http.ResponseWriter, r *http.Request) {
 	} else { // Prefix and Tags
 		tagList = append(tagList, prefix)
 		list, err = p.db.GetUFOsByTags(r.Context(), database.GetUFOsByTagsParams{
-			Tags:     append(tagList),
+			Tags:     tagList,
 			TagCount: int64(len(tagList)),
 		})
 	}

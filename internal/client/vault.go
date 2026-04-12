@@ -108,15 +108,7 @@ func (c *Client) getPersonaFromVaultV1(
 }
 
 func (c *Client) resolvePersona(personas []Persona, personaName string) error {
-	parts := strings.Split(personaName, "@")
-	if len(parts) > 2 {
-		return fmt.Errorf("Persona name invalid. Usage: <name>[@<domain>]")
-	}
-	name := parts[0]
-	domain := ""
-	if len(parts) == 2 {
-		domain = parts[1]
-	}
+	name, domain, _ := strings.Cut(personaName, "@")
 
 	var matches []*Persona
 	for i := range personas {

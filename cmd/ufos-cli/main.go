@@ -24,11 +24,13 @@ func main() {
 	cmds.Register("download", c.HandleDownloadUFO)
 	cmds.Register("ping", c.HandleHealthCheck)
 	cmds.Register("list", c.HandleList)
-	cmds.Register("remove", c.HandleRemoveUFO)
+	cmds.Register("scuttle", c.HandleRemoveUFO)
 	cmds.Register("search", c.HandleSearch)
 	cmds.Register("update", c.HandleUpdateUFO)
 	cmds.Register("upload", c.HandleUploadUFO)
-	cmds.Register("orbit", c.HandleOrbit)
+	cmds.Register("orbit add", c.HandleOrbitAdd)
+	cmds.Register("orbit list", c.HandleOrbitList)
+	cmds.Register("orbit scuttle", c.HandleOrbitRemove)
 	cmds.Register("info", c.HandleUFOInfo)
 
 	// parse cmd line arguments

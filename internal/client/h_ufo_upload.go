@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/json"
@@ -41,23 +40,19 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter desired persona name > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		n, err := getInput("your persona name")
+		if err != nil {
+			return err
 		}
-		n := scanner.Text()
 		name = &n
 	}
 
 	// If file wasn't in Args, prompt, and open the file
 	if *filePath == "" {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter local filepath for file to upload > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		fp, err := getInput("local filepath for file to upload")
+		if err != nil {
+			return err
 		}
-		fp := scanner.Text()
 		filePath = &fp
 	}
 

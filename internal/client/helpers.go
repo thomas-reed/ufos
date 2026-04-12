@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bufio"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,121 @@ import (
 	"github.com/thomas-reed/ufos/internal/objects"
 )
 
+func buildContact() (contacts.ContactMetadata, error) {
+	fmt.Println("----- Contact Builder -----")
+	fmt.Println("Enter your new contact's metadata below. Hit enter with no value to skip to next field.")
+	var contact contacts.ContactMetadata
+	var err error
+
+	contact.PersonaID, err = getInput("persona ID")
+	if err != nil {
+		return contacts.ContactMetadata{}, err
+	}
+
+	d, err := getInput("domain")
+	if err != nil {
+		return contacts.ContactMetadata{}, err
+	}
+	if strings.HasPrefix(d, "http") {
+		scheme, domain, ok := strings.Cut(d, "://")
+		if !ok {
+			d = scheme // assume the domain actually starts with http
+		} else {
+			d = domain
+		}
+	}
+	if strings.HasSuffix(d, "/") {
+		d = d[:len(d)-1]
+	}
+	contact.Domain = d
+
+	contact.FirstName, err = getInput("first name")
+	if err != nil {
+		return contacts.ContactMetadata{}, err
+	}
+
+	contact.LastName, err = getInput("last name")
+	if err != nil {
+		return contacts.ContactMetadata{}, err
+	}
+
+	contact.Company, err = getInput("company")
+	if err != nil {
+		return contacts.ContactMetadata{}, err
+	}
+
+	for {
+		n, err := getInput("phone number")
+		if err != nil {
+			return contacts.ContactMetadata{}, err
+		}
+		if n == "" {
+			break
+		}
+		t, err := getInput("phone type (mobile, home, main, etc.)")
+		if err != nil {
+			return contacts.ContactMetadata{}, err
+		}
+		contact.Phones = append(contact.Phones, contacts.Phone{
+			PhoneType: t,
+			Number: n,
+		})
+	}
+
+	for {
+		a1, err := getInput("street address (line 1)")
+		if err != nil {
+			return contacts.ContactMetadata{}, err
+		}
+		if a1 == "" {
+			break
+		}
+		a2, err := getInput("street address (line 2)")
+		if err != nil {
+			return contacts.ContactMetadata{}, err
+		}
+		c, err := getInput("city/town")
+		if err != nil {
+			return contacts.ContactMetadata{}, err
+		}
+		s, err := getInput("state/region")
+		if err != nil {
+			return contacts.ContactMetadata{}, err
+		}
+		z, err := getInput("zip/postal code")
+		if err != nil {
+			return contacts.ContactMetadata{}, err
+		}
+		n, err := getInput("country")
+		if err != nil {
+			return contacts.ContactMetadata{}, err
+		}
+		contact.Addresses = append(contact.Addresses, contacts.Address{
+			Address1: a1,
+			Address2: a2,
+			City: c,
+			StateRegion: s,
+			Zip: z,
+			Country: n,
+		})
+	}
+	contact.Notes, err = getInput("notes")
+	if err != nil {
+		return contacts.ContactMetadata{}, err
+	}
+	return contact, nil
+}
+
+func getInput(inputStr string) (string, error) {
+	scanner := bufio.NewScanner(os.Stdin)
+	fmt.Printf("Enter %s > ", inputStr)
+	if !scanner.Scan() {
+		return "", fmt.Errorf("Input interrupted!")
+	}
+	inputTxt := scanner.Text()
+	return inputTxt, nil
+}
+
 func formatPrefix(prefix *string) {
 	if *prefix == "" {
 		*prefix = "/"
@@ -30,6 +146,8 @@ func formatPrefix(prefix *string) {
 	}
 	return
 }
+
+
 
 func (c *Client) printUFOList(list []api.UFO) error {
 	// (Params: output, minwidth, tabwidth, padding, padchar, flags)

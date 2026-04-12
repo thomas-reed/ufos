@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"net/http"
@@ -31,12 +30,10 @@ func (c *Client) HandleSearch(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter desired persona name > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		n, err := getInput("your persona name")
+		if err != nil {
+			return err
 		}
-		n := scanner.Text()
 		name = &n
 	}
 

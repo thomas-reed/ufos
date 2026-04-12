@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
@@ -41,12 +40,10 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter desired persona name > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		n, err := getInput("your persona name")
+		if err != nil {
+			return err
 		}
-		n := scanner.Text()
 		name = &n
 	}
 
@@ -76,16 +73,17 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 	headers := make(map[string]string)
 
 	if *host != "" {
-		parts := strings.Split(*host, "@")
-		if len(parts) != 2 {
+		hostPersonaID, targetServer, ok := strings.Cut(*host, "@")
+		if !ok {
 			return fmt.Errorf("Invalid host identity. Expected '<persona_id@<domain>'")
 		}
-		hostPersonaID = parts[0]
 
 		// Construct the foreign server URL
-		targetServer = parts[1]
 		if !strings.HasPrefix(targetServer, "http") {
 			targetServer = serverScheme + targetServer
+		}
+		if strings.HasSuffix(targetServer, "/") {
+			targetServer = targetServer[:len(targetServer)-1]
 		}
 		headers[api.HeaderHost] = hostPersonaID
 	}

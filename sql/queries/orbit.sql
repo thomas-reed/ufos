@@ -15,7 +15,12 @@ VALUES (
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
 )
-RETURNING persona_id, created_at;
+ON CONFLICT(persona_id) DO UPDATE SET
+  signing_key = EXCLUDED.signing_key,
+  exchange_key = EXCLUDED.exchange_key,
+  metadata = EXCLUDED.metadata,
+  updated_at = EXCLUDED.updated_at
+RETURNING persona_id, created_at, updated_at;
 
 -- name: UpdateOrbitMetadata :one
 UPDATE orbit

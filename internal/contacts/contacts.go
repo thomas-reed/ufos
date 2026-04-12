@@ -1,36 +1,26 @@
 package contacts
 
 type ContactMetadata struct {
+	PersonaID string    `json:"persona_id"`
+	Domain    string    `json:"domain"`
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
-	Nickname  string    `json:"nickname"`
 	Company   string    `json:"company"`
 	Phones    []Phone   `json:"phones"`
 	Addresses []Address `json:"addresses"`
+	Notes     string    `json:"notes"`
 }
 
 type Address struct {
-	Address1 string `json:"address1"` // address line 1
-	Address2 string `json:"address2"` // address line 2
-	City     string `json:"city"`     // city
-	State    string `json:"state"`    // state/region
-	Zip      string `json:"zip"`      // Zip/Postal code
-	Country  string `json:"country"`  // country
+	Address1    string `json:"address1"`     // address line 1
+	Address2    string `json:"address2"`     // address line 2
+	City        string `json:"city"`         // city
+	StateRegion string `json:"state_region"` // state/region
+	Zip         string `json:"zip"`          // Zip/Postal code
+	Country     string `json:"country"`      // country
 }
 
 type Phone struct {
-	PhoneType   PhoneType `json:"phone_type"`
-	CountryCode string    `json:"country_code"`
-	Number      string    `json:"number"`
+	PhoneType string `json:"phone_type"`
+	Number    string `json:"number"`
 }
-
-type PhoneType int
-
-const (
-	Mobile PhoneType = iota
-	Home
-	Main
-	Work
-	School
-	Other
-)

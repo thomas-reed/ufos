@@ -27,7 +27,12 @@ VALUES (
   CURRENT_TIMESTAMP,
   CURRENT_TIMESTAMP
 )
-RETURNING persona_id, created_at
+ON CONFLICT(persona_id) DO UPDATE SET
+  signing_key = EXCLUDED.signing_key,
+  exchange_key = EXCLUDED.exchange_key,
+  metadata = EXCLUDED.metadata,
+  updated_at = EXCLUDED.updated_at
+RETURNING persona_id, created_at, updated_at
 `
 
 type AddToOrbitParams struct {
@@ -40,6 +45,7 @@ type AddToOrbitParams struct {
 type AddToOrbitRow struct {
 	PersonaID string    `json:"persona_id"`
 	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 func (q *Queries) AddToOrbit(ctx context.Context, arg AddToOrbitParams) (AddToOrbitRow, error) {
@@ -50,7 +56,7 @@ func (q *Queries) AddToOrbit(ctx context.Context, arg AddToOrbitParams) (AddToOr
 		arg.Metadata,
 	)
 	var i AddToOrbitRow
-	err := row.Scan(&i.PersonaID, &i.CreatedAt)
+	err := row.Scan(&i.PersonaID, &i.CreatedAt, &i.UpdatedAt)
 	return i, err
 }
 

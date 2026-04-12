@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"net/http"
@@ -11,13 +10,13 @@ import (
 	"golang.org/x/term"
 )
 
-func (c *Client) HandleUFOInfo(cmd Command) error {
+func (c *Client) HandleOrbitRemove(cmd Command) error {
 	// Set up flags and parse
-	fs := flag.NewFlagSet("info", flag.ContinueOnError)
+	fs := flag.NewFlagSet("download", flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
-	id := fs.String("id", "", "The id of the UFO you want the detailed info for")
+	id := fs.String("id", "", "The personaID and domain (<id>@<domain>) of the user you want to add to your orbit")
 	fs.StringVar(id, "i", "", "alias for --id")
 
 	if err := fs.Parse(cmd.Args); err != nil {
@@ -26,18 +25,16 @@ func (c *Client) HandleUFOInfo(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter desired persona name > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		n, err := getInput("your persona name")
+		if err != nil {
+			return err
 		}
-		n := scanner.Text()
 		name = &n
 	}
 
 	// If id wasn't in Args, error out
 	if *id == "" {
-		return fmt.Errorf("Enter id of UFO you wish to retrieve using '--id' or '-i'")
+		return fmt.Errorf("Enter <personaID>@<domain> of user you wish to add to your orbit using '--id' or '-i'")
 	}
 
 	// get master password to decrypt vault, find persona
@@ -55,12 +52,24 @@ func (c *Client) HandleUFOInfo(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
 
-	// Get UFO Metadata and print
-	ufoUrl := c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
-	ufoRes, _, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
+	// 2. Dissection: Split bob@domain.com
 
-	if err = c.printUFODetails(ufoRes); err != nil {
+	// 3. Discovery Handshake (Foreign Server)
+	url := domain + api.RouteRegister + "/" + userID // Or api.RoutePersonas
+	keys, _, err := ufoPublicRequest[api.PersonaKeysResponse](c, "GET", url, nil, nil)
+	if err != nil {
 		return err
 	}
-	return nil
+
+	// 4. Persistence Ritual (Local Server)
+	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
+	req := api.SatelliteRequest{
+		PersonaID:   keys.PersonaID,
+		SigningKey:  keys.SigningKey,
+		ExchangeKey: keys.ExchangeKey,
+		// Optional: Metadata encrypted with MasterKey
+	}
+
+	_, _, err = ufoSignedRequest[api.Satellite](c, "POST", orbitUrl, req, nil)
+	// ... handle ...
 }
