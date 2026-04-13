@@ -52,7 +52,7 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 		return fmt.Errorf("Enter id of UFO you wish to download using '--id' or '-i'")
 	}
 
-	// get master password to decrypt vault, find persona
+	// Get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
@@ -82,9 +82,7 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 		if !strings.HasPrefix(targetServer, "http") {
 			targetServer = serverScheme + targetServer
 		}
-		if strings.HasSuffix(targetServer, "/") {
-			targetServer = targetServer[:len(targetServer)-1]
-		}
+		targetServer = strings.TrimSuffix(targetServer, "/")
 		headers[api.HeaderHost] = hostPersonaID
 	}
 
@@ -142,8 +140,7 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 		hash = envelope[16:48]
 		nameLen := int(envelope[48])
 
-		// 2. Name and Key Presence Guard
-		// (Key must be at least CryptoMetadataV1Size (17) bytes long)
+		// Get filename and wrapped key
 		minRequired := 49 + nameLen + crypto.CryptoMetadataV1Size
 		if len(envelope) < minRequired {
 			return fmt.Errorf("Malformed envelope: filename or key truncated")
@@ -204,7 +201,7 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 		}
 	}
 
-	// 3. Create the local file
+	// Create the local file
 	outFile, err := os.Create(downloadPath)
 	if err != nil {
 		return fmt.Errorf("could not create local file: %w", err)

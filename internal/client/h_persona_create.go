@@ -34,7 +34,7 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 		}
 		name = &n
 	}
-	// get Domain from name, or prompt
+	// Get Domain from name, or prompt
 	_, domain, ok := strings.Cut(*name, "@")
 	if !ok {
 		var err error
@@ -43,11 +43,9 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 			return err
 		}
 	}
-	if strings.HasSuffix(domain, "/") {
-		domain = domain[:len(domain)-1]
-	}
+	domain = strings.TrimSuffix(domain, "/")
 
-	// if token wasn't in Args, prompt
+	// If token wasn't in Args, prompt
 	if *token == "" {
 		t, err := getInput("registration token", true)
 		if err != nil {
@@ -56,7 +54,7 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 		token = &t
 	}
 
-	// get master password to decrypt vault
+	// Get master password to decrypt vault
 	fmt.Printf("Enter master password: ")
 	pw, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {

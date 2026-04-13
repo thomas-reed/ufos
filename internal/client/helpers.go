@@ -38,14 +38,12 @@ func buildContact(existing contacts.ContactMetadata) (contacts.ContactMetadata, 
 	if strings.HasPrefix(d, "http") {
 		scheme, domain, ok := strings.Cut(d, "://")
 		if !ok {
-			d = scheme // assume the domain actually starts with http
+			d = scheme // Domain must start with http?
 		} else {
 			d = domain
 		}
 	}
-	if strings.HasSuffix(d, "/") {
-		d = d[:len(d)-1]
-	}
+	d = strings.TrimSuffix(d, "/")
 	contact.Domain = d
 
 	contact.FirstName, err = getInputWithDefault("first name", existing.FirstName, false)
@@ -76,7 +74,7 @@ func buildContact(existing contacts.ContactMetadata) (contacts.ContactMetadata, 
 			}
 			contact.Phones = append(contact.Phones, contacts.Phone{
 				PhoneType: t,
-				Number: n,
+				Number:    n,
 			})
 		}
 	}
@@ -95,7 +93,7 @@ func buildContact(existing contacts.ContactMetadata) (contacts.ContactMetadata, 
 		}
 		contact.Phones = append(contact.Phones, contacts.Phone{
 			PhoneType: t,
-			Number: n,
+			Number:    n,
 		})
 	}
 
@@ -127,12 +125,12 @@ func buildContact(existing contacts.ContactMetadata) (contacts.ContactMetadata, 
 				return contacts.ContactMetadata{}, err
 			}
 			contact.Addresses = append(contact.Addresses, contacts.Address{
-				Address1: a1,
-				Address2: a2,
-				City: c,
-				Region: r,
+				Address1:   a1,
+				Address2:   a2,
+				City:       c,
+				Region:     r,
 				PostalCode: p,
-				Country: n,
+				Country:    n,
 			})
 		}
 	}
@@ -166,12 +164,12 @@ func buildContact(existing contacts.ContactMetadata) (contacts.ContactMetadata, 
 			return contacts.ContactMetadata{}, err
 		}
 		contact.Addresses = append(contact.Addresses, contacts.Address{
-			Address1: a1,
-			Address2: a2,
-			City: c,
-			Region: r,
+			Address1:   a1,
+			Address2:   a2,
+			City:       c,
+			Region:     r,
 			PostalCode: p,
-			Country: n,
+			Country:    n,
 		})
 	}
 	contact.Notes, err = getInputWithDefault("notes", existing.Notes, false)
@@ -189,7 +187,7 @@ func getInput(prompt string, required bool) (string, error) {
 		} else {
 			fmt.Printf("Enter %s > ", prompt)
 		}
-		
+
 		if !scanner.Scan() {
 			return "", fmt.Errorf("Input interrupted!")
 		}
@@ -237,7 +235,6 @@ func formatPrefix(prefix *string) {
 	if !strings.HasSuffix(*prefix, "/") {
 		*prefix = *prefix + "/"
 	}
-	return
 }
 
 func (c *Client) getRecursiveIDs(folder api.UFOMetadataFromHeader, searchSalt []byte) ([]string, error) {
@@ -255,12 +252,12 @@ func (c *Client) getRecursiveIDs(folder api.UFOMetadataFromHeader, searchSalt []
 	if err = json.Unmarshal(metadata, &ufoMeta); err != nil {
 		return nil, fmt.Errorf("Error unmarshalling ufo metadata: %w", err)
 	}
-	
+
 	// Build the hashedPath for this folder's children
 	folderPrefix := ufoMeta.Prefix + ufoMeta.Name
 	formatPrefix(&folderPrefix)
 	hashedPrefix := crypto.HashTag(searchSalt, folderPrefix)
-	
+
 	// List children
 	queryValue := url.Values{}
 	queryValue.Add("prefix", hashedPrefix)
@@ -277,9 +274,9 @@ func (c *Client) getRecursiveIDs(folder api.UFOMetadataFromHeader, searchSalt []
 	if err != nil {
 		return nil, fmt.Errorf("Error getting UFO list for %s: %w", folderPrefix, err)
 	}
-	
+
 	ids := []string{}
-	
+
 	for _, child := range children {
 		ids = append(ids, child.ID)
 		if child.SizeBytes < 0 {
@@ -288,11 +285,12 @@ func (c *Client) getRecursiveIDs(folder api.UFOMetadataFromHeader, searchSalt []
 				MetadataBlob: child.Metadata,
 			}
 			subIDs, err := c.getRecursiveIDs(childMeta, searchSalt)
-			if err != nil { return nil, err }
+			if err != nil {
+				return nil, err
+			}
 			ids = append(ids, subIDs...)
 		}
 	}
-	
+
 	return ids, nil
 }
-

@@ -41,7 +41,7 @@ func (c *Client) HandleRemoveUFO(cmd Command) error {
 		return fmt.Errorf("Enter id of UFO you wish to remove using '--id' or '-i'")
 	}
 
-	// get master password to decrypt vault, find persona
+	// Get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
@@ -88,7 +88,7 @@ func (c *Client) HandleRemoveUFO(cmd Command) error {
 		if err != nil {
 			return err
 		}
-		
+
 		if *id != ufoConfirm {
 			return fmt.Errorf("Confirmation ID does not match! Cancelling request")
 		}

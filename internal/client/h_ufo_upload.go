@@ -58,7 +58,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 
 	formatPrefix(prefix)
 
-	// get master password to decrypt vault, find persona
+	// Get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {

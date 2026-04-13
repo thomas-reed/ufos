@@ -137,7 +137,7 @@ func (c *Client) resolvePersona(personas []Persona, personaName string) error {
 		copy(c.ActivePersona.PrivateExchangeKey, matches[0].PrivateExchangeKey)
 		c.ActivePersona.PublicExchangeKey = make([]byte, len(matches[0].PublicExchangeKey))
 		copy(c.ActivePersona.PublicExchangeKey, matches[0].PublicExchangeKey)
-		// generate the ID and master key from the retrieved persona
+		// Generate the ID and master key from the retrieved persona
 		c.PersonaID = crypto.DerivePersonaID(
 			ed25519.PublicKey(c.ActivePersona.PrivateSigningKey),
 			c.ActivePersona.Name,
@@ -147,7 +147,7 @@ func (c *Client) resolvePersona(personas []Persona, personaName string) error {
 			c.PersonaID,
 		)
 		return nil
-	default: // matches more than 1
+	default: // Matches more than 1
 		var domains []string
 		for _, p := range matches {
 			domains = append(domains, p.BaseURL)

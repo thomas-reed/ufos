@@ -43,9 +43,9 @@ type AddToOrbitResponse struct {
 }
 
 type PersonaKeysResponse struct {
-	PersonaID   string    `json:"persona_id"`
-	SigningKey  []byte    `json:"signing_key"`
-	ExchangeKey []byte    `json:"exchange_key"`
+	PersonaID   string `json:"persona_id"`
+	SigningKey  []byte `json:"signing_key"`
+	ExchangeKey []byte `json:"exchange_key"`
 }
 
 // List, Search return a []UFOItem

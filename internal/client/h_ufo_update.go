@@ -55,7 +55,7 @@ func (c *Client) HandleUpdateUFO(cmd Command) error {
 		return fmt.Errorf("Nothing entered to update - modify filename, prefix, tags, or access list. Use 'ufos update help' for more information")
 	}
 
-	// get master password to decrypt vault, find persona
+	// Get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {

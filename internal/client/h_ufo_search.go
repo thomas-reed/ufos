@@ -63,7 +63,7 @@ func (c *Client) HandleSearch(cmd Command) error {
 
 	// Get list of hashed Tags
 	queryValues := url.Values{}
-	// if prefix exists, format it and add to query params
+	// If prefix exists, format it and add to query params
 	if *prefix != "" {
 		formatPrefix(prefix)
 		hashedPrefix := crypto.HashTag(searchSalt, *prefix)

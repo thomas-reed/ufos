@@ -11,7 +11,7 @@ type CryptoSuite uint8
 const (
 	_             CryptoSuite = iota
 	CryptoSuiteV1             // SHA3-256, AES-256-GCM
-	// CryptoSuiteV2					// some future packages
+	// CryptoSuiteV2					// Some future packages
 )
 
 const (

@@ -37,7 +37,7 @@ func (c *Client) HandleUFODetails(cmd Command) error {
 		return fmt.Errorf("Enter id of UFO you wish to retrieve using '--id' or '-i'")
 	}
 
-	// get master password to decrypt vault, find persona
+	// Get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {

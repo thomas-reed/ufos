@@ -3,6 +3,7 @@ package client
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/thomas-reed/ufos/internal/api"
@@ -10,7 +11,7 @@ import (
 )
 
 func (c *Client) HandleOrbitInfo(cmd Command) error {
-  // Set up flags and parse
+	// Set up flags and parse
 	fs := flag.NewFlagSet("orbit details", flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
@@ -50,12 +51,12 @@ func (c *Client) HandleOrbitInfo(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateSigningKey)
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
-    
-  // Get satellite data and print
+
+	// Get satellite data and print
 	url := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
-	sat, _, err := ufoSignedRequest[api.Satellite](c, "GET", url, nil, nil)
-    
-  if err = c.printSatelliteDetails(sat); err != nil {
+	sat, _, err := ufoSignedRequest[api.Satellite](c, http.MethodGet, url, nil, nil)
+
+	if err = c.printSatelliteDetails(sat); err != nil {
 		return err
 	}
 	return nil

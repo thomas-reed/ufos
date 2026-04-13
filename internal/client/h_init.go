@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -13,19 +12,17 @@ func HandleInit(cmd Command) error {
 	fmt.Println("Welcome to UFOs!")
 	fmt.Println("(U)nidentifiable (F)ile/(O)bject (s)torage")
 	fmt.Println()
-	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Creating new Vault..")
-	fmt.Print("Enter persona name > ")
-	if !scanner.Scan() {
-		return fmt.Errorf("Input interrupted!")
-	}
-	n := scanner.Text()
 
-	fmt.Print("Enter UFOs URL > ")
-	if !scanner.Scan() {
-		return fmt.Errorf("Input interrupted!")
+	n, err := getInput("your desired persona name", true)
+	if err != nil {
+		return err
 	}
-	url := scanner.Text()
+
+	url, err := getInput("the UFOs server URL", true)
+	if err != nil {
+		return err
+	}
 
 	fmt.Printf("Enter master password: ")
 	p, err := term.ReadPassword(int(os.Stdin.Fd()))

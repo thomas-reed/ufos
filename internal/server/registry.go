@@ -64,7 +64,7 @@ func (s *Server) AddPersona(p Persona) error {
 	}
 	newP := p
 	s.Registry[p.ID] = &newP
-	s.registrationToken = "" // ensure token is wiped out
+	s.registrationToken = "" // Ensure token is wiped out
 	s.mu.Unlock()
 
 	return s.SaveRegistry()

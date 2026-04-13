@@ -47,7 +47,7 @@ func (s *Server) HandleAddToOrbit(w http.ResponseWriter, r *http.Request) {
 
 	status := http.StatusCreated
 	if res.CreatedAt != res.UpdatedAt {
-			status = http.StatusOK
+		status = http.StatusOK
 	}
 
 	jsonResponse(w, status, api.AddToOrbitResponse{

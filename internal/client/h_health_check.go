@@ -1,11 +1,9 @@
 package client
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/thomas-reed/ufos/internal/api"
 )
@@ -22,12 +20,10 @@ func (c *Client) HandleHealthCheck(cmd Command) error {
 
 	// If domain wasn't in Args, prompt
 	if *domain == "" {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter domain > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		d, err := getInput("domain", true)
+		if err != nil {
+			return err
 		}
-		d := scanner.Text()
 		domain = &d
 	}
 
@@ -41,7 +37,7 @@ func (c *Client) HandleHealthCheck(cmd Command) error {
 	case http.StatusOK:
 		fmt.Println("Server is up!")
 	default:
-		fmt.Printf("Unexpected status code (%s)\n", status)
+		fmt.Printf("Unexpected status code (%d)\n", status)
 	}
 	return nil
 }

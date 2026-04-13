@@ -78,14 +78,14 @@ func (m *ObjectMetadata) SyncTags() {
 	tagMap[strings.ToLower(m.Prefix)] = struct{}{}
 	tagMap[strings.ToLower(m.ContentType)] = struct{}{}
 
-	// add sanitized individual words from name and prefix
+	// Add sanitized individual words from name and prefix
 	for _, word := range strings.Fields(cleanString(m.Name)) {
 		tagMap[strings.ToLower(word)] = struct{}{}
 	}
 	for _, word := range strings.Fields(cleanString(m.Prefix)) {
 		tagMap[strings.ToLower(word)] = struct{}{}
 	}
-	// convert the map back to []string and save it
+	// Convert the map back to []string and save it
 	var newTags []string
 	for tag := range tagMap {
 		newTags = append(newTags, tag)

@@ -26,7 +26,7 @@ func (s *Server) Router() *http.ServeMux {
 	mux.Handle("GET "+api.RouteOrbit, s.Authenticate(http.HandlerFunc(s.HandleOrbitList)))
 	mux.Handle("GET "+api.RouteOrbit+"/{id}", s.Authenticate(http.HandlerFunc(s.HandleGetFromOrbit)))
 	mux.Handle("DELETE "+api.RouteOrbit+"/{id}", s.Authenticate(http.HandlerFunc(s.HandleRemoveFromOrbit)))
-	
+
 	// Handle streaming requests
 	mux.Handle("PUT "+api.RouteUFOs+"/{uuid}", s.AuthenticateStream(http.HandlerFunc(s.HandleUploadUFO)))
 	mux.Handle("GET "+api.RouteUFOs+"/{uuid}", s.AuthenticateStream(http.HandlerFunc(s.HandleDownloadUFO)))

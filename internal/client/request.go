@@ -100,7 +100,6 @@ func ufoDownloadStream(c *Client, url string, headers map[string]string) (*http.
 }
 
 // Shared Helpers
-
 func buildJSONRequest(method, url string, body any, headers map[string]string) (*http.Request, error) {
 	var bodyReader io.Reader
 	if body != nil {

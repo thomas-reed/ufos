@@ -75,7 +75,7 @@ func (c *Client) CreatePrefixHierarchy(prefix string, searchSalt []byte) error {
 		case http.StatusOK:
 			fmt.Printf("'%s' folder exists - UFO %s.\n", folderMeta.Name, folderRes.ID)
 		default:
-			fmt.Printf("Unexpected status code (%s)\n", status)
+			fmt.Printf("Unexpected status code (%d)\n", status)
 		}
 	}
 	return nil

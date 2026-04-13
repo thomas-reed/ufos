@@ -14,7 +14,6 @@ import (
 )
 
 func (c *Client) printUFOList(list []api.UFO) error {
-	// (Params: output, minwidth, tabwidth, padding, padchar, flags)
 	w := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 
 	// Print the Header
@@ -107,7 +106,7 @@ func (c *Client) printUFODetails(ufo api.UFOMetadataFromHeader) error {
 	fmt.Println(ufoMetadata.UserTags)
 	fmt.Println("Access List:")
 	if len(accessList) == 0 {
-    fmt.Println("- Private (No guests authorized)")
+		fmt.Println("- Private (No guests authorized)")
 	} else {
 		for _, contact := range accessList {
 			fmt.Printf("- %s %s\n", contact.FirstName, contact.LastName)
@@ -123,7 +122,7 @@ func (c *Client) printOrbitList(orbit []api.Satellite) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 	fmt.Fprintln(w, "NAME\tID\tDOMAIN\tCOMPANY")
 	fmt.Fprintln(w, "----\t--\t------\t-------")
-	
+
 	// Decrypt the list
 	for _, sat := range orbit {
 		metadataBytes, err := crypto.Decrypt(c.MasterKey, sat.Metadata)
@@ -166,7 +165,7 @@ func (c *Client) printSatelliteDetails(sat api.Satellite) error {
 	fmt.Printf("Notes:\n%s\n", satMetadata.Notes)
 	fmt.Println("Phones:")
 	if len(satMetadata.Phones) == 0 {
-    fmt.Println("- No phone numbers saved.")
+		fmt.Println("- No phone numbers saved.")
 	} else {
 		for _, phone := range satMetadata.Phones {
 			fmt.Printf("- %s: %s\n", phone.PhoneType, phone.Number)
@@ -174,7 +173,7 @@ func (c *Client) printSatelliteDetails(sat api.Satellite) error {
 	}
 	fmt.Println("Addresses:")
 	if len(satMetadata.Addresses) == 0 {
-    fmt.Println("- No addresses saved.")
+		fmt.Println("- No addresses saved.")
 	} else {
 		for _, address := range satMetadata.Addresses {
 			fmt.Printf("--- %s\n", address.Label)

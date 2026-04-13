@@ -25,7 +25,7 @@ func (s *Server) HandleInitPersona(w http.ResponseWriter, r *http.Request) {
 	s.tokenCreated = time.Now().UTC()
 	s.mu.Unlock()
 
-	jsonResponse(w, http.StatusOK, api.InitPersonaResponse{
+	jsonResponse(w, http.StatusCreated, api.InitPersonaResponse{
 		RegistrationToken: s.registrationToken,
 	})
 }

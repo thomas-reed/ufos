@@ -15,8 +15,8 @@ func (s *Server) HandleGetPersonaKeys(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, http.StatusOK, api.PersonaKeysResponse{
-		PersonaID: persona.ID,
-		SigningKey: persona.SigningKey,
+		PersonaID:   persona.ID,
+		SigningKey:  persona.SigningKey,
 		ExchangeKey: persona.ExchangeKey,
 	})
 }

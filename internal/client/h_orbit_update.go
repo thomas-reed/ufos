@@ -40,7 +40,7 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 		return fmt.Errorf("Enter Persona ID of the user you wish to update with '--id' or '-i'")
 	}
 
-	// get master password to decrypt vault, find persona
+	// Get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
@@ -57,7 +57,7 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 
 	// Get existing satellite and decrypt metadata
 	satUrl := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
-	sat, _, err := ufoSignedRequest[api.Satellite](c, "GET", satUrl, nil, nil)
+	sat, _, err := ufoSignedRequest[api.Satellite](c, http.MethodGet, satUrl, nil, nil)
 	satMetaBytes, err := crypto.Decrypt(c.MasterKey, sat.Metadata)
 	if err != nil {
 		return err
@@ -86,7 +86,7 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 
 	// Get public keys of user
 	url := serverScheme + contact.Domain + api.RoutePersonas + "/" + contact.PersonaID
-	keys, _, err := ufoPublicRequest[api.PersonaKeysResponse](c, "GET", url, nil, nil)
+	keys, _, err := ufoPublicRequest[api.PersonaKeysResponse](c, http.MethodGet, url, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -97,14 +97,14 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 		PersonaID:   keys.PersonaID,
 		SigningKey:  keys.SigningKey,
 		ExchangeKey: keys.ExchangeKey,
-		Metadata: metaBlob,
+		Metadata:    metaBlob,
 	}
 
 	sat, status, err := ufoSignedRequest[api.Satellite](c, "POST", orbitUrl, req, nil)
 	if err != nil {
 		return err
 	}
-	if status != http.StatusCreated && status !=http.StatusOK {
+	if status != http.StatusCreated && status != http.StatusOK {
 		return fmt.Errorf("Unexpected status code (%d)", status)
 	}
 

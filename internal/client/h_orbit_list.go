@@ -11,7 +11,7 @@ import (
 )
 
 func (c *Client) HandleOrbitList(cmd Command) error {
-    // Set up flags and parse
+	// Set up flags and parse
 	fs := flag.NewFlagSet("orbit list", flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
@@ -30,7 +30,7 @@ func (c *Client) HandleOrbitList(cmd Command) error {
 		name = &n
 	}
 
-	// get master password to decrypt vault, find persona
+	// Get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
@@ -44,11 +44,11 @@ func (c *Client) HandleOrbitList(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateSigningKey)
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
-    
-  // Get Orbit
+
+	// Get Orbit
 	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
 	orbit, _, err := ufoSignedRequest[[]api.Satellite](c, http.MethodGet, orbitUrl, nil, nil)
-    
+
 	// Print it out
 	if err = c.printOrbitList(orbit); err != nil {
 		return err
