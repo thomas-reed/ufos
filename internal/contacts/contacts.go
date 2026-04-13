@@ -12,12 +12,13 @@ type ContactMetadata struct {
 }
 
 type Address struct {
-	Address1    string `json:"address1"`     // address line 1
-	Address2    string `json:"address2"`     // address line 2
-	City        string `json:"city"`         // city
-	StateRegion string `json:"state_region"` // state/region
-	Zip         string `json:"zip"`          // Zip/Postal code
-	Country     string `json:"country"`      // country
+	Label      string `json:"label"`    // "Home", "Work", etc.
+	Address1   string `json:"address1"` // address line 1
+	Address2   string `json:"address2"` // address line 2
+	City       string `json:"city"`     // city
+	Region     string `json:"region"`   // state/province/region
+	PostalCode string `json:"zip"`      // ZIP/Postal code
+	Country    string `json:"country"`  // country
 }
 
 type Phone struct {

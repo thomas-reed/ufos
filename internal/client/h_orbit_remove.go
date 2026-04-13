@@ -11,12 +11,12 @@ import (
 )
 
 func (c *Client) HandleOrbitRemove(cmd Command) error {
-	// Set up flags and parse
-	fs := flag.NewFlagSet("download", flag.ContinueOnError)
+  // Set up flags and parse
+	fs := flag.NewFlagSet("orbit remove", flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
-	id := fs.String("id", "", "The personaID and domain (<id>@<domain>) of the user you want to add to your orbit")
+	id := fs.String("id", "", "The Persona ID of the user you want to remove")
 	fs.StringVar(id, "i", "", "alias for --id")
 
 	if err := fs.Parse(cmd.Args); err != nil {
@@ -34,7 +34,7 @@ func (c *Client) HandleOrbitRemove(cmd Command) error {
 
 	// If id wasn't in Args, error out
 	if *id == "" {
-		return fmt.Errorf("Enter <personaID>@<domain> of user you wish to add to your orbit using '--id' or '-i'")
+		return fmt.Errorf("Enter Persona ID of the user you wish to remove using '--id' or '-i'")
 	}
 
 	// get master password to decrypt vault, find persona
@@ -52,24 +52,16 @@ func (c *Client) HandleOrbitRemove(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
 
-	// 2. Dissection: Split bob@domain.com
-
-	// 3. Discovery Handshake (Foreign Server)
-	url := domain + api.RouteRegister + "/" + userID // Or api.RoutePersonas
-	keys, _, err := ufoPublicRequest[api.PersonaKeysResponse](c, "GET", url, nil, nil)
+	// Remove satellite from orbit
+	url := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
+	_, statusCode, err := ufoSignedRequest[api.EmptyResponse](c, http.MethodDelete, url, nil, nil)
 	if err != nil {
 		return err
 	}
-
-	// 4. Persistence Ritual (Local Server)
-	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
-	req := api.SatelliteRequest{
-		PersonaID:   keys.PersonaID,
-		SigningKey:  keys.SigningKey,
-		ExchangeKey: keys.ExchangeKey,
-		// Optional: Metadata encrypted with MasterKey
+	if statusCode != http.StatusNoContent {
+		return fmt.Errorf("Unexpected response status code (%d) for Persona ID %s", statusCode, *id)
 	}
 
-	_, _, err = ufoSignedRequest[api.Satellite](c, "POST", orbitUrl, req, nil)
-	// ... handle ...
+	fmt.Printf("Satellite %s has been removed from your orbit.\n", *id)
+	return nil
 }

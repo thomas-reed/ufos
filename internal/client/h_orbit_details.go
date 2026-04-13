@@ -3,20 +3,19 @@ package client
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 
 	"github.com/thomas-reed/ufos/internal/api"
 	"golang.org/x/term"
 )
 
-func (c *Client) HandleUFOInfo(cmd Command) error {
-	// Set up flags and parse
-	fs := flag.NewFlagSet("info", flag.ContinueOnError)
+func (c *Client) HandleOrbitInfo(cmd Command) error {
+  // Set up flags and parse
+	fs := flag.NewFlagSet("orbit details", flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
-	id := fs.String("id", "", "The id of the UFO you want the detailed info for")
+	id := fs.String("id", "", "The Persona ID of the user you want to inspect")
 	fs.StringVar(id, "i", "", "alias for --id")
 
 	if err := fs.Parse(cmd.Args); err != nil {
@@ -34,7 +33,7 @@ func (c *Client) HandleUFOInfo(cmd Command) error {
 
 	// If id wasn't in Args, error out
 	if *id == "" {
-		return fmt.Errorf("Enter id of UFO you wish to retrieve using '--id' or '-i'")
+		return fmt.Errorf("Enter Persona ID of the user you wish to inspect '--id' or '-i'")
 	}
 
 	// get master password to decrypt vault, find persona
@@ -51,12 +50,12 @@ func (c *Client) HandleUFOInfo(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateSigningKey)
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
-
-	// Get UFO Metadata and print
-	ufoUrl := c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
-	ufoRes, _, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
-
-	if err = c.printUFODetails(ufoRes); err != nil {
+    
+    // 2. Handshake: GET /api/orbit/{id}
+	url := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
+	sat, _, err := ufoSignedRequest[api.Satellite](c, "GET", url, nil, nil)
+    
+  if err = c.printSatelliteDetails(sat); err != nil {
 		return err
 	}
 	return nil

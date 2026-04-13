@@ -10,12 +10,14 @@ import (
 	"golang.org/x/term"
 )
 
-func (c *Client) HandleOrbitList(cmd Command) error {
-    // Set up flags and parse
-	fs := flag.NewFlagSet("orbit list", flag.ContinueOnError)
+func (c *Client) HandleUFODetails(cmd Command) error {
+	// Set up flags and parse
+	fs := flag.NewFlagSet("info", flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
+	id := fs.String("id", "", "The id of the UFO you want the details for")
+	fs.StringVar(id, "i", "", "alias for --id")
 
 	if err := fs.Parse(cmd.Args); err != nil {
 		return err
@@ -28,6 +30,11 @@ func (c *Client) HandleOrbitList(cmd Command) error {
 			return err
 		}
 		name = &n
+	}
+
+	// If id wasn't in Args, error out
+	if *id == "" {
+		return fmt.Errorf("Enter id of UFO you wish to retrieve using '--id' or '-i'")
 	}
 
 	// get master password to decrypt vault, find persona
@@ -44,13 +51,12 @@ func (c *Client) HandleOrbitList(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateSigningKey)
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
-    
-  // Get Orbit
-	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
-	orbit, _, err := ufoSignedRequest[[]api.Satellite](c, http.MethodGet, orbitUrl, nil, nil)
-    
-	// Print it out
-	if err = c.printOrbitList(orbit); err != nil {
+
+	// Get UFO Metadata and print
+	ufoUrl := c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
+	ufoRes, _, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
+
+	if err = c.printUFODetails(ufoRes); err != nil {
 		return err
 	}
 	return nil
