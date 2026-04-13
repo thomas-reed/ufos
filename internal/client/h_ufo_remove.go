@@ -29,7 +29,7 @@ func (c *Client) HandleRemoveUFO(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		n, err := getInput("your persona name")
+		n, err := getInput("your persona name", true)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,8 @@ func (c *Client) HandleRemoveUFO(cmd Command) error {
 
 	// Desired UFO is a folder - alert the user for recursive removal
 	if ufoMeta.SizeBytes < 0 {
-		ufoConfirm, err := getInput("your persona name")
+		fmt.Println("!!! The UFO ID your entered is a Folder. Enter the UFO ID again below to confirm removal of all UFOs under that prefix !!!")
+		ufoConfirm, err := getInput("UFO ID", true)
 		if err != nil {
 			return err
 		}

@@ -40,7 +40,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		n, err := getInput("your persona name")
+		n, err := getInput("your persona name", true)
 		if err != nil {
 			return err
 		}
@@ -49,7 +49,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 
 	// If file wasn't in Args, prompt, and open the file
 	if *filePath == "" {
-		fp, err := getInput("local filepath for file to upload")
+		fp, err := getInput("local filepath for file to upload", true)
 		if err != nil {
 			return err
 		}

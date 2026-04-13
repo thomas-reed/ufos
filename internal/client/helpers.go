@@ -16,18 +16,22 @@ import (
 	"github.com/thomas-reed/ufos/internal/objects"
 )
 
-func buildContact() (contacts.ContactMetadata, error) {
+func buildContact(existing contacts.ContactMetadata) (contacts.ContactMetadata, error) {
 	fmt.Println("----- Contact Builder -----")
-	fmt.Println("Enter your new contact's metadata below. Hit enter with no value to skip to next field.")
+	if existing.PersonaID == "" {
+		fmt.Println("Enter your new contact's metadata below. Hit enter skip to optional fields. Hit ctrl-c to cancel.")
+	} else {
+		fmt.Println("Update your contact's metadata below. Hit enter to keep the current value or skip optional empty fields. Hit ctrl-c to cancel.")
+	}
 	var contact contacts.ContactMetadata
 	var err error
 
-	contact.PersonaID, err = getInput("persona ID")
+	contact.PersonaID, err = getInputWithDefault("persona ID", existing.PersonaID, true)
 	if err != nil {
 		return contacts.ContactMetadata{}, err
 	}
 
-	d, err := getInput("domain")
+	d, err := getInputWithDefault("domain", existing.Domain, true)
 	if err != nil {
 		return contacts.ContactMetadata{}, err
 	}
@@ -44,30 +48,48 @@ func buildContact() (contacts.ContactMetadata, error) {
 	}
 	contact.Domain = d
 
-	contact.FirstName, err = getInput("first name")
+	contact.FirstName, err = getInputWithDefault("first name", existing.FirstName, false)
 	if err != nil {
 		return contacts.ContactMetadata{}, err
 	}
 
-	contact.LastName, err = getInput("last name")
+	contact.LastName, err = getInputWithDefault("last name", existing.LastName, false)
 	if err != nil {
 		return contacts.ContactMetadata{}, err
 	}
 
-	contact.Company, err = getInput("company")
+	contact.Company, err = getInputWithDefault("company", existing.Company, false)
 	if err != nil {
 		return contacts.ContactMetadata{}, err
 	}
 
+	// Go through any existing phones first
+	if len(existing.Phones) > 0 {
+		for i := range existing.Phones {
+			n, err := getInputWithDefault("phone number", existing.Phones[i].Number, false)
+			if err != nil {
+				return contacts.ContactMetadata{}, err
+			}
+			t, err := getInputWithDefault("phone type (mobile, home, main, etc.)", existing.Phones[i].PhoneType, false)
+			if err != nil {
+				return contacts.ContactMetadata{}, err
+			}
+			contact.Phones = append(contact.Phones, contacts.Phone{
+				PhoneType: t,
+				Number: n,
+			})
+		}
+	}
+	// Then loop for any new phone numbers
 	for {
-		n, err := getInput("phone number")
+		n, err := getInput("new phone number", false)
 		if err != nil {
 			return contacts.ContactMetadata{}, err
 		}
 		if n == "" {
 			break
 		}
-		t, err := getInput("phone type (mobile, home, main, etc.)")
+		t, err := getInput("phone type (mobile, home, main, etc.)", false)
 		if err != nil {
 			return contacts.ContactMetadata{}, err
 		}
@@ -77,31 +99,69 @@ func buildContact() (contacts.ContactMetadata, error) {
 		})
 	}
 
+	// Go through any existing addresses first
+	if len(existing.Addresses) != 0 {
+		for i := range existing.Addresses {
+			a1, err := getInputWithDefault("street address (line 1)", existing.Addresses[i].Address1, false)
+			if err != nil {
+				return contacts.ContactMetadata{}, err
+			}
+			a2, err := getInputWithDefault("street address (line 2)", existing.Addresses[i].Address2, false)
+			if err != nil {
+				return contacts.ContactMetadata{}, err
+			}
+			c, err := getInputWithDefault("city/town", existing.Addresses[i].City, false)
+			if err != nil {
+				return contacts.ContactMetadata{}, err
+			}
+			r, err := getInputWithDefault("state/province/region", existing.Addresses[i].Region, false)
+			if err != nil {
+				return contacts.ContactMetadata{}, err
+			}
+			p, err := getInputWithDefault("ZIP/postal code", existing.Addresses[i].PostalCode, false)
+			if err != nil {
+				return contacts.ContactMetadata{}, err
+			}
+			n, err := getInputWithDefault("country", existing.Addresses[i].Country, false)
+			if err != nil {
+				return contacts.ContactMetadata{}, err
+			}
+			contact.Addresses = append(contact.Addresses, contacts.Address{
+				Address1: a1,
+				Address2: a2,
+				City: c,
+				Region: r,
+				PostalCode: p,
+				Country: n,
+			})
+		}
+	}
+	// Then loop for any new addresses
 	for {
-		a1, err := getInput("street address (line 1)")
+		a1, err := getInput("street address (line 1)", false)
 		if err != nil {
 			return contacts.ContactMetadata{}, err
 		}
 		if a1 == "" {
 			break
 		}
-		a2, err := getInput("street address (line 2)")
+		a2, err := getInput("street address (line 2)", false)
 		if err != nil {
 			return contacts.ContactMetadata{}, err
 		}
-		c, err := getInput("city/town")
+		c, err := getInput("city/town", false)
 		if err != nil {
 			return contacts.ContactMetadata{}, err
 		}
-		r, err := getInput("state/province/region")
+		r, err := getInput("state/province/region", false)
 		if err != nil {
 			return contacts.ContactMetadata{}, err
 		}
-		p, err := getInput("ZIP/postal code")
+		p, err := getInput("ZIP/postal code", false)
 		if err != nil {
 			return contacts.ContactMetadata{}, err
 		}
-		n, err := getInput("country")
+		n, err := getInput("country", false)
 		if err != nil {
 			return contacts.ContactMetadata{}, err
 		}
@@ -114,21 +174,55 @@ func buildContact() (contacts.ContactMetadata, error) {
 			Country: n,
 		})
 	}
-	contact.Notes, err = getInput("notes")
+	contact.Notes, err = getInputWithDefault("notes", existing.Notes, false)
 	if err != nil {
 		return contacts.ContactMetadata{}, err
 	}
 	return contact, nil
 }
 
-func getInput(inputStr string) (string, error) {
+func getInput(prompt string, required bool) (string, error) {
 	scanner := bufio.NewScanner(os.Stdin)
-	fmt.Printf("Enter %s > ", inputStr)
-	if !scanner.Scan() {
-		return "", fmt.Errorf("Input interrupted!")
+	for {
+		if required {
+			fmt.Printf("Enter %s (required) > ", prompt)
+		} else {
+			fmt.Printf("Enter %s > ", prompt)
+		}
+		
+		if !scanner.Scan() {
+			return "", fmt.Errorf("Input interrupted!")
+		}
+		input := scanner.Text()
+		if required && input == "" {
+			continue
+		}
+		return input, nil
 	}
-	inputTxt := scanner.Text()
-	return inputTxt, nil
+}
+
+func getInputWithDefault(prompt, defaultValue string, required bool) (string, error) {
+	scanner := bufio.NewScanner(os.Stdin)
+	for {
+		if required {
+			fmt.Printf("Enter %s (required) [%s] > ", prompt, defaultValue)
+		} else {
+			fmt.Printf("Enter %s [%s] > ", prompt, defaultValue)
+		}
+
+		if !scanner.Scan() {
+			return "", fmt.Errorf("input interrupted")
+		}
+
+		input := scanner.Text()
+		if input == "" {
+			if required && defaultValue == "" {
+				continue
+			}
+			return defaultValue, nil
+		}
+		return input, nil
+	}
 }
 
 func formatPrefix(prefix *string) {

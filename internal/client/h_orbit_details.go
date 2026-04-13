@@ -24,7 +24,7 @@ func (c *Client) HandleOrbitInfo(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		n, err := getInput("your persona name")
+		n, err := getInput("your persona name", true)
 		if err != nil {
 			return err
 		}
@@ -33,10 +33,10 @@ func (c *Client) HandleOrbitInfo(cmd Command) error {
 
 	// If id wasn't in Args, error out
 	if *id == "" {
-		return fmt.Errorf("Enter Persona ID of the user you wish to inspect '--id' or '-i'")
+		return fmt.Errorf("Enter Persona ID of the user you wish to inspect with '--id' or '-i'")
 	}
 
-	// get master password to decrypt vault, find persona
+	// Get master password to decrypt vault, find persona
 	fmt.Printf("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
@@ -51,7 +51,7 @@ func (c *Client) HandleOrbitInfo(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
     
-    // 2. Handshake: GET /api/orbit/{id}
+  // Get satellite data and print
 	url := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
 	sat, _, err := ufoSignedRequest[api.Satellite](c, "GET", url, nil, nil)
     

@@ -13,12 +13,14 @@ import (
 	"golang.org/x/term"
 )
 
-func (c *Client) HandleOrbitAdd(cmd Command) error {
+func (c *Client) HandleOrbitUpdate(cmd Command) error {
 	// Set up flags and parse
-	fs := flag.NewFlagSet("orbit add", flag.ContinueOnError)
+	fs := flag.NewFlagSet("orbit update", flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
+	id := fs.String("id", "", "The Persona ID of the user you want to update")
+	fs.StringVar(id, "i", "", "alias for --id")
 
 	if err := fs.Parse(cmd.Args); err != nil {
 		return err
@@ -31,6 +33,11 @@ func (c *Client) HandleOrbitAdd(cmd Command) error {
 			return err
 		}
 		name = &n
+	}
+
+	// If id wasn't in Args, error out
+	if *id == "" {
+		return fmt.Errorf("Enter Persona ID of the user you wish to update with '--id' or '-i'")
 	}
 
 	// get master password to decrypt vault, find persona
@@ -48,8 +55,21 @@ func (c *Client) HandleOrbitAdd(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
 
+	// Get existing satellite and decrypt metadata
+	satUrl := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
+	sat, _, err := ufoSignedRequest[api.Satellite](c, "GET", satUrl, nil, nil)
+	satMetaBytes, err := crypto.Decrypt(c.MasterKey, sat.Metadata)
+	if err != nil {
+		return err
+	}
+	defer clear(satMetaBytes)
+	var satMetadata contacts.ContactMetadata
+	if err = json.Unmarshal(satMetaBytes, &satMetadata); err != nil {
+		return fmt.Errorf("Error unmarshalling satellite metadata: %w", err)
+	}
+
 	// Build Contact metadata
-	contact, err := buildContact(contacts.ContactMetadata{})
+	contact, err := buildContact(satMetadata)
 	if err != nil {
 		return err
 	}

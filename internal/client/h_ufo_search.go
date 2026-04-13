@@ -30,7 +30,7 @@ func (c *Client) HandleSearch(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		n, err := getInput("your persona name")
+		n, err := getInput("your persona name", true)
 		if err != nil {
 			return err
 		}

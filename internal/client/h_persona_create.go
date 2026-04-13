@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/json"
 	"errors"
@@ -29,7 +28,7 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		n, err := getInput("your persona name")
+		n, err := getInput("your persona name", true)
 		if err != nil {
 			return err
 		}
@@ -38,12 +37,11 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 	// get Domain from name, or prompt
 	_, domain, ok := strings.Cut(*name, "@")
 	if !ok {
-		scanner := bufio.NewScanner(os.Stdin)
-		fmt.Print("Enter your desired UFOs domain > ")
-		if !scanner.Scan() {
-			return fmt.Errorf("Input interrupted!")
+		var err error
+		domain, err = getInput("your desired UFOs domain", true)
+		if err != nil {
+			return err
 		}
-		domain = scanner.Text()
 	}
 	if strings.HasSuffix(domain, "/") {
 		domain = domain[:len(domain)-1]
@@ -51,7 +49,7 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 
 	// if token wasn't in Args, prompt
 	if *token == "" {
-		t, err := getInput("registration token")
+		t, err := getInput("registration token", true)
 		if err != nil {
 			return err
 		}
