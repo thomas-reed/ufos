@@ -17,8 +17,8 @@ func (c *Client) printUFOList(list []api.UFO) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 
 	// Print the Header
-	fmt.Fprintln(w, "ID\tTYPE\tPATH\tNAME")
-	fmt.Fprintln(w, "--\t----\t----\t----")
+	fmt.Fprintln(w, "ID\tTYPE\tPREFIX\tNAME\tLINK")
+	fmt.Fprintln(w, "--\t----\t------\t----\t----")
 
 	// Decrypt the list
 	for _, ufo := range list {
@@ -36,12 +36,15 @@ func (c *Client) printUFOList(list []api.UFO) error {
 			filetype = "DIR"
 		}
 
+		link := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs + "/" + ufo.ID
+
 		// Write row to the tabwriter
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
 			ufo.ID,
 			filetype,
 			metadata.Prefix,
 			metadata.Name,
+			link,
 		)
 		clear(metadataBytes)
 		metadata = objects.ObjectMetadata{}
