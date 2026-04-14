@@ -10,7 +10,7 @@ import (
 	"golang.org/x/term"
 )
 
-func (c *Client) HandleOrbitInfo(cmd Command) error {
+func (c *Client) HandleOrbitDetails(cmd Command) error {
 	// Set up flags and parse
 	fs := flag.NewFlagSet("orbit details", flag.ContinueOnError)
 
