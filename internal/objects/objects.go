@@ -55,16 +55,6 @@ func (m *ObjectMetadata) GrantAccess(
 	return wrappedDEK, nil
 }
 
-func (m *ObjectMetadata) RevokeAccess(recipientID string) {
-	for i := range m.AccessList {
-		if m.AccessList[i].RecipientID == recipientID {
-			// Remove the entry from the slice
-			m.AccessList = append(m.AccessList[:i], m.AccessList[i+1:]...)
-			return
-		}
-	}
-}
-
 func (m *ObjectMetadata) SyncTags() {
 	tagMap := make(map[string]struct{})
 

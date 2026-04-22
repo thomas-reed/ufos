@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,6 +15,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigChan)
 
 	go func() {
 		sig := <-sigChan
@@ -32,9 +32,8 @@ func main() {
 	go s.StartJanitor(ctx)
 
 	go func() {
-		log.Printf("Server listening on port: %s\n", s.Port)
-		if err := s.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server error: %v", err)
+		if err := s.StartServer(); err != nil {
+			log.Fatalf("Error starting server: %v", err)
 		}
 	}()
 
@@ -42,7 +41,7 @@ func main() {
 	<-ctx.Done()
 
 	log.Println("Shutting down HTTP server...")
-	// Give the server 10 seconds to finish existing requests
+	// Give the server 30 seconds to finish existing requests
 	shutdownCtx, shutdownCancel := context.WithTimeout(
 		context.Background(),
 		30*time.Second,

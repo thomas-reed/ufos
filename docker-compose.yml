@@ -1,0 +1,34 @@
+# TODO: add an init service that runs `chown -R 65532:65532 /data` on the
+# databank volume before carrier starts, so the container can run as non-root.
+
+services:
+  carrier:
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: carrier
+    env_file:
+      - .env
+    environment:
+      PROBE_URL: ${PROBE_URL}
+    ports:
+      - "${PORT}:${PORT}"
+    volumes:
+      - databank:${DATA_PATH}:rw
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/probe"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  databank:

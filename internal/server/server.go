@@ -28,6 +28,9 @@ type Server struct {
 	Port              string
 	mu                sync.RWMutex
 	WG                sync.WaitGroup
+	mode              string
+	tlsEnabled        bool
+	tls               tlsInfo
 	registrationToken string
 	tokenCreated      time.Time
 	dataPath          string
@@ -35,13 +38,17 @@ type Server struct {
 	Registry          map[string]*Persona
 }
 
+type tlsInfo struct {
+	certDir  string
+	certFile string
+	keyFile  string
+}
+
 func NewServer() (*Server, error) {
 	s := Server{}
 
-	err := godotenv.Load()
-	if err != nil {
-		return nil, fmt.Errorf("Could not load env file: %w", err)
-	}
+	_ = godotenv.Load()
+	
 	s.Port = os.Getenv("PORT")
 	if s.Port == "" {
 		return nil, fmt.Errorf("Port not found")
@@ -50,11 +57,18 @@ func NewServer() (*Server, error) {
 	if s.dataPath == "" {
 		return nil, fmt.Errorf("Data path not found")
 	}
+	s.mode = os.Getenv("MODE")
+	if s.mode == "" {
+		s.mode = "dev"
+	}
+
+	if err := ensureDir(s.dataPath); err != nil {
+		return nil, err
+	}
 
 	s.registryPath = filepath.Join(s.dataPath, "registry.json")
-	err = s.LoadRegistry()
-	if err != nil {
-		return nil, fmt.Errorf("Registry could not be loaded: %w", err)
+	if err := s.LoadRegistry(); err != nil {
+		return nil, err
 	}
 
 	if len(s.Registry) == 0 {
@@ -64,10 +78,10 @@ func NewServer() (*Server, error) {
 			s.registrationToken = token
 			log.Println("Bootstrap token loaded from environment.")
 		} else {
-			// Fallback: Generate one and PRINT IT
+			// Fallback: Generate one and print it to console
 			token, err := crypto.GenerateKey()
 			if err != nil {
-				log.Fatalf("Error generating registration token: %s", err)
+				return nil, fmt.Errorf("Error generating registration token: %w", err)
 			}
 			s.registrationToken = base64.StdEncoding.EncodeToString(token)
 			s.tokenCreated = time.Time{}
@@ -92,10 +106,46 @@ func NewServer() (*Server, error) {
 		persona.db = database.New(dbConn)
 	}
 
+	if s.mode == "prod" {
+		if err := s.initTLS(); err != nil {
+			return nil, err
+		}
+	}
 	s.HTTPServer = &http.Server{
 		Addr:    ":" + s.Port,
 		Handler: s.Router(),
 	}
 
 	return &s, nil
+}
+
+func ensureDir(dir string) error {
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return fmt.Errorf("Data path couldn't be found/created: %w", err)
+	}
+	return nil
+}
+
+func (s *Server) initTLS() error {
+	s.tls.certDir = filepath.Join(s.dataPath, "certs")
+	if err := ensureDir(s.tls.certDir); err != nil {
+		return err
+	}
+	// TODO: ACME LETSENCRYPT STUFF
+	s.tlsEnabled = true
+	return nil
+}
+
+func (s *Server) StartServer() error {
+	if s.tlsEnabled {
+		if err := s.HTTPServer.ListenAndServeTLS(s.tls.certFile, s.tls.keyFile); err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("Server start error: %w", err)
+		}
+	} else {
+		if err := s.HTTPServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return fmt.Errorf("Server start error: %w", err)
+		}
+	}
+	log.Printf("Server listening on port: %s\n", s.Port)
+	return nil
 }
