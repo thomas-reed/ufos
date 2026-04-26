@@ -5,17 +5,18 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build -o carrier ./cmd/carrier
+RUN CGO_ENABLED=1 GOOS=linux go build -o mothership ./cmd/mothership
 RUN CGO_ENABLED=1 GOOS=linux go build -o probe ./cmd/probe
 
 FROM gcr.io/distroless/base-debian12
-WORKDIR /
+WORKDIR /app
 
-COPY --from=builder /app/carrier /carrier
-COPY --from=builder /app/probe /probe
+COPY --from=builder /app/mothership /app/mothership
+COPY --from=builder /app/probe /app/probe
+COPY --from=builder /app/sql/schema /app/sql/schema
 
-# TODO: switch carrier to non-root (UserID/GroupID 65532) once the volume is
+# TODO: switch mothership to non-root (UID/GID 65532) once the volume is
 # initialized with the correct ownership for write access.
 # USER 65532:65532
 
-ENTRYPOINT ["/carrier"]
+ENTRYPOINT ["/app/mothership"]

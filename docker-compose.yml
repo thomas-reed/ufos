@@ -1,12 +1,12 @@
 # TODO: add an init service that runs `chown -R 65532:65532 /data` on the
-# databank volume before carrier starts, so the container can run as non-root.
+# databank volume before mothership starts, so the container can run as non-root.
 
 services:
-  carrier:
+  mothership:
     build:
       context: .
       dockerfile: Containerfile
-    container_name: carrier
+    container_name: mothership
     env_file:
       - .env
     environment:

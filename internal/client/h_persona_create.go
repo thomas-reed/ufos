@@ -1,14 +1,11 @@
 package client
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/thomas-reed/ufos/internal/api"
 	"golang.org/x/term"
@@ -20,6 +17,8 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 
 	name := fs.String("name", "", "The name of the persona to register")
 	fs.StringVar(name, "n", "", "alias for --name")
+	domain := fs.String("domain", "", "The domain of the UFOs server you want to register to")
+	fs.StringVar(domain, "d", "", "alias for --domain")
 	token := fs.String("token", "", "The registration token from running the 'new' command, (or getting the Initial Bootstrap Token from server logs)")
 	fs.StringVar(token, "t", "", "alias for --token")
 	if err := fs.Parse(cmd.Args); err != nil {
@@ -28,22 +27,22 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 
 	// If name wasn't in Args, prompt
 	if *name == "" {
-		n, err := getInput("your persona name", true)
+		n, err := getInput("your deisred persona name", true)
 		if err != nil {
 			return err
 		}
 		name = &n
 	}
-	// Get Domain from name, or prompt
-	_, domain, ok := strings.Cut(*name, "@")
-	if !ok {
-		var err error
-		domain, err = getInput("your desired UFOs domain", true)
+	// If domain wasn't in Args, prompt
+	if *domain == "" {
+		d, err := getInput("the UFOs domain", true)
 		if err != nil {
 			return err
 		}
+		formatDomain(&d)
+		domain = &d
 	}
-	domain = strings.TrimSuffix(domain, "/")
+	
 
 	// If token wasn't in Args, prompt
 	if *token == "" {
@@ -55,22 +54,23 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 	}
 
 	// Get master password to decrypt vault
-	fmt.Printf("Enter master password: ")
-	pw, err := term.ReadPassword(int(os.Stdin.Fd()))
+	fmt.Print("Enter master password: ")
+	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
-	defer clear(pw)
+	defer clear(password)
+	fmt.Println()
 
 	// Check to see if the persona exists in the vault (making this a retry registration)
-	err = c.GetPersonaFromVault(*name, pw)
+	err = c.GetPersonaFromVault(*name, password)
 	if errors.Is(err, ErrPersonaNotFound) {
 		// In case of an error, create the new persona and load it into the client
-		err = c.AddPersonaToVault(*name, domain, pw)
+		err = c.AddPersonaToVault(*name, *domain, password)
 		if err != nil {
 			return fmt.Errorf("Error writing new persona to vault: %w", err)
 		}
-		err = c.GetPersonaFromVault(*name, pw)
+		err = c.GetPersonaFromVault(*name, password)
 		if err != nil {
 			return fmt.Errorf("Error retrieving new persona from vault: %w", err)
 		}
@@ -81,17 +81,16 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
 
-	data, err := json.Marshal(api.NewPersonaRequest{
+	body := api.NewPersonaRequest{
 		ID:          c.PersonaID,
 		SigningKey:  c.ActivePersona.PublicSigningKey,
 		ExchangeKey: c.ActivePersona.PublicExchangeKey,
-	})
-	body := bytes.NewReader(data)
-	url := domain + api.RoutePersonas
+	}
+	url := serverScheme + *domain + api.RoutePersonas
 	header := map[string]string{
 		api.HeaderRegistration: *token,
 	}
-	res, _, err := ufoSignedRequest[api.CreatePersonaResponse](
+	res, status, err := ufoPublicRequest[api.CreatePersonaResponse](
 		c,
 		http.MethodPost,
 		url,
@@ -99,11 +98,11 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 		header,
 	)
 	if err != nil {
-		return fmt.Errorf("Error creating persona: %w", err)
+		return fmt.Errorf("Error creating persona: %w (%d)", err, status)
 	}
 
 	if res.ID == c.PersonaID {
-		fmt.Printf("Persona '%s' has been registered on %s", res.ID, domain)
+		fmt.Printf("Persona '%s' has been registered on %s.\n", res.ID, *domain)
 	}
 	return nil
 }

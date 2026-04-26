@@ -1,9 +1,11 @@
 package server
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/thomas-reed/ufos/internal/api"
+)
 
 func HandleHealth(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(http.StatusText(http.StatusOK)))
+	jsonResponse(w, http.StatusOK, api.EmptyResponse{})
 }

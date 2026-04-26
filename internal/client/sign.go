@@ -17,14 +17,19 @@ func (c *Client) Sign(
 	requiresBodyHash bool,
 ) error {
 	bodyHash := ""
-	if requiresBodyHash && r.Body != nil {
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			return fmt.Errorf("Couldn't read request body: %w", err)
+	if requiresBodyHash {
+		var body []byte
+		var err error
+
+		if r.Body != nil {
+			body, err = io.ReadAll(r.Body)
+			if err != nil {
+				return fmt.Errorf("couldn't read request body: %w", err)
+			}
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
 		}
+
 		bodyHash = crypto.HashAndBase64(body)
-		// Re-stuff the body so HandleCreateUFO can decode the JSON
-		r.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
 
 	timestampStr := fmt.Sprintf("%d", timestamp)

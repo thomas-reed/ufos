@@ -53,12 +53,13 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 	}
 
 	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(password)
+	fmt.Println()
 	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
@@ -86,7 +87,7 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 		headers[api.HeaderHost] = hostPersonaID
 	}
 
-	url := targetServer + api.RouteUFOs + "/" + *id
+	url := serverScheme + targetServer + api.RouteUFOs + "/" + *id
 	res, err := ufoDownloadStream(c, url, headers)
 	if err != nil {
 		return err

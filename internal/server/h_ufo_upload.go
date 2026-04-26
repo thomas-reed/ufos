@@ -2,6 +2,7 @@ package server
 
 import (
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -112,4 +113,5 @@ func (s *Server) HandleUploadUFO(w http.ResponseWriter, r *http.Request) {
 			Status: objects.UFOStatus(res.UploadStatus),
 		},
 	)
+	log.Printf("%s uploaded successfully\n", ufoID)
 }

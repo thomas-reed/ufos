@@ -41,12 +41,13 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 	}
 
 	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(password)
+	fmt.Println()
 	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
@@ -56,7 +57,7 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 	defer clear(c.MasterKey)
 
 	// Get existing satellite and decrypt metadata
-	satUrl := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
+	satUrl := serverScheme + c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
 	sat, _, err := ufoSignedRequest[api.Satellite](c, http.MethodGet, satUrl, nil, nil)
 	satMetaBytes, err := crypto.Decrypt(c.MasterKey, sat.Metadata)
 	if err != nil {
@@ -86,13 +87,12 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 
 	// Get public keys of user
 	url := serverScheme + contact.Domain + api.RoutePersonas + "/" + contact.PersonaID
-	keys, _, err := ufoPublicRequest[api.PersonaKeysResponse](c, http.MethodGet, url, nil, nil)
+	keys, keyStatus, err := ufoPublicRequest[api.PersonaKeysResponse](c, http.MethodGet, url, nil, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("Error fetching public keys: %w, (%d)", err, keyStatus)
 	}
-
 	// Save user to orbit and send
-	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
+	orbitUrl := serverScheme + c.ActivePersona.BaseURL + api.RouteOrbit
 	req := api.OrbitMetadataRequest{
 		PersonaID:   keys.PersonaID,
 		SigningKey:  keys.SigningKey,
@@ -108,6 +108,6 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 		return fmt.Errorf("Unexpected status code (%d)", status)
 	}
 
-	fmt.Printf("%s has been added to your orbit!", sat.PersonaID)
+	fmt.Printf("%s has been updated.\n", sat.PersonaID)
 	return nil
 }

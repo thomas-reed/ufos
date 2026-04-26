@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/mattn/go-sqlite3"
@@ -155,4 +156,6 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		ID:        updated.ID,
 		UpdatedAt: updated.UpdatedAt,
 	})
+
+	log.Printf("%s updated successfully\n", updated.ID)
 }

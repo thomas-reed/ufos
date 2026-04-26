@@ -42,12 +42,13 @@ func (c *Client) HandleRemoveUFO(cmd Command) error {
 	}
 
 	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(password)
+	fmt.Println()
 	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
@@ -61,8 +62,11 @@ func (c *Client) HandleRemoveUFO(cmd Command) error {
 	defer clear(searchSalt)
 
 	// Get UFO Metadata to get the plaintext Prefix
-	ufoUrl := c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
-	ufoRes, _, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
+	ufoUrl := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
+	ufoRes, status, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
+	if err != nil {
+		return fmt.Errorf("Error removing ufo: %w, (%d)", err, status)
+	}
 
 	metadataBytes, err := base64.StdEncoding.DecodeString(string(ufoRes.MetadataBlob))
 	if err != nil {
@@ -102,7 +106,7 @@ func (c *Client) HandleRemoveUFO(cmd Command) error {
 
 	for _, ufoID := range idList {
 		fmt.Printf("Removing UFO %s... ", ufoID)
-		url := c.ActivePersona.BaseURL + api.RouteUFOs + "/" + ufoID
+		url := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs + "/" + ufoID
 		_, statusCode, err := ufoSignedRequest[api.EmptyResponse](c, http.MethodDelete, url, nil, nil)
 		if err != nil {
 			return err

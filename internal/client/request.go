@@ -24,7 +24,7 @@ func ufoSignedRequest[T any](c *Client, method, url string, reqBody any, headers
 		return zero, 0, err
 	}
 
-	if err := c.Sign(req, time.Now().Unix(), reqBody != nil); err != nil {
+	if err := c.Sign(req, time.Now().Unix(), true); err != nil {
 		var zero T
 		return zero, 0, err
 	}
@@ -103,7 +103,10 @@ func ufoDownloadStream(c *Client, url string, headers map[string]string) (*http.
 func buildJSONRequest(method, url string, body any, headers map[string]string) (*http.Request, error) {
 	var bodyReader io.Reader
 	if body != nil {
-		data, _ := json.Marshal(body)
+		data, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("Error marshalling req body: %w", err)
+		}
 		bodyReader = bytes.NewReader(data)
 	}
 
@@ -129,12 +132,12 @@ func sendAndDecode[T any](c *Client, req *http.Request) (T, int, error) {
 	var resData T
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return resData, res.StatusCode, fmt.Errorf("Error sending request: %w", err)
+		return resData, 0, fmt.Errorf("Error sending request: %w", err)
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode >= 400 {
-		return resData, res.StatusCode, fmt.Errorf("Server error")
+		return resData, res.StatusCode, decodeErrorResponse(res)
 	}
 
 	// Handle Head requests (api.UFOMetadataFromHeader type)
@@ -155,4 +158,15 @@ func sendAndDecode[T any](c *Client, req *http.Request) (T, int, error) {
 		return resData, res.StatusCode, fmt.Errorf("Error decoding response: %w", err)
 	}
 	return resData, res.StatusCode, nil
+}
+
+func decodeErrorResponse(res *http.Response) error {
+	var apiErr api.ErrorResponse
+	if err := json.NewDecoder(res.Body).Decode(&apiErr); err != nil {
+		return fmt.Errorf("Server error (%d)", res.StatusCode)
+	}
+	if apiErr.Err == "" {
+		return fmt.Errorf("Server error (%d)", res.StatusCode)
+	}
+	return fmt.Errorf("%s", apiErr.Err)
 }

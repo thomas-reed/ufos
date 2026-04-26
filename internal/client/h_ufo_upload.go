@@ -47,6 +47,22 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 		name = &n
 	}
 
+	// Get master password to decrypt vault, find persona
+	fmt.Print("Enter master password: ")
+	password, err := term.ReadPassword(int(os.Stdin.Fd()))
+	if err != nil {
+		return fmt.Errorf("Error reading password: %w", err)
+	}
+	defer clear(password)
+	fmt.Println()
+	err = c.GetPersonaFromVault(*name, password)
+	if err != nil {
+		return err
+	}
+	defer clear(c.ActivePersona.PrivateSigningKey)
+	defer clear(c.ActivePersona.PrivateExchangeKey)
+	defer clear(c.MasterKey)
+
 	// If file wasn't in Args, prompt, and open the file
 	if *filePath == "" {
 		fp, err := getInput("local filepath for file to upload", true)
@@ -57,21 +73,6 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	}
 
 	formatPrefix(prefix)
-
-	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
-	password, err := term.ReadPassword(int(os.Stdin.Fd()))
-	if err != nil {
-		return fmt.Errorf("Error reading password: %w", err)
-	}
-	defer clear(password)
-	err = c.GetPersonaFromVault(*name, password)
-	if err != nil {
-		return err
-	}
-	defer clear(c.ActivePersona.PrivateSigningKey)
-	defer clear(c.ActivePersona.PrivateExchangeKey)
-	defer clear(c.MasterKey)
 
 	// Generate data encryption key
 	dek, err := crypto.GenerateKey()
@@ -161,7 +162,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	}
 
 	// Get Orbit
-	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
+	orbitUrl := serverScheme + c.ActivePersona.BaseURL + api.RouteOrbit
 	orbit, _, err := ufoSignedRequest[[]api.Satellite](c, http.MethodGet, orbitUrl, nil, nil)
 
 	// Make orbit into a map for faster searching for access list
@@ -180,7 +181,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 		}
 		if _, found := orbitMap[recipientID]; !found {
 			fmt.Printf(
-				"Skipping '%s' - persona is not in your orbit. Use 'ufos orbit add -u <Persona_ID>'",
+				"Skipping '%s' - persona is not in your orbit. Use 'ufos orbit add -u <Persona_ID>'\n",
 				recipientID,
 			)
 			continue
@@ -248,7 +249,7 @@ func (c *Client) HandleUploadUFO(cmd Command) error {
 	}
 
 	// Send the request to create the UFO database entry
-	url := c.ActivePersona.BaseURL + api.RouteUFOs
+	url := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs
 	res, _, err := ufoSignedRequest[api.CreateUFOResponse](
 		c,
 		http.MethodPost,

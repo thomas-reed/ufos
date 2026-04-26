@@ -65,7 +65,7 @@ func (c *Client) printUFODetails(ufo api.UFOMetadataFromHeader) error {
 	}
 
 	// Get Orbit and construct access list map
-	orbitUrl := c.ActivePersona.BaseURL + api.RouteOrbit
+	orbitUrl := serverScheme + c.ActivePersona.BaseURL + api.RouteOrbit
 	orbit, _, err := ufoSignedRequest[[]api.Satellite](c, http.MethodGet, orbitUrl, nil, nil)
 	orbitMap := make(map[string]contacts.ContactMetadata)
 	for _, sat := range orbit {

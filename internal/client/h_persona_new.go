@@ -31,12 +31,13 @@ func (c *Client) HandleNewPersona(cmd Command) error {
 	}
 
 	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(password)
+	fmt.Println()
 	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
@@ -46,7 +47,7 @@ func (c *Client) HandleNewPersona(cmd Command) error {
 	defer clear(c.MasterKey)
 
 	// Send request and print result
-	url := c.ActivePersona.BaseURL + api.RouteInit
+	url := serverScheme + c.ActivePersona.BaseURL + api.RouteInit
 	token, status, err := ufoSignedRequest[api.InitPersonaResponse](c, http.MethodPost, url, nil, nil)
 	if err != nil {
 		return err
@@ -57,7 +58,7 @@ func (c *Client) HandleNewPersona(cmd Command) error {
 
 	fmt.Printf("Generated Registration Token: %s\n", token.RegistrationToken)
 	fmt.Println("This token is only valid for 15 minutes.")
-	fmt.Println("Use 'ufos register' command to create a new persona for yourself, or share it with your friend to let them use this server!")
+	fmt.Println("Use 'ufos register' command to create a new persona for yourself, or share it with your friend to let them use this server.")
 
 	token = api.InitPersonaResponse{}
 	return nil

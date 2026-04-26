@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/base64"
+	"log"
 	"net/http"
 	"time"
 
@@ -28,4 +29,6 @@ func (s *Server) HandleInitPersona(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusCreated, api.InitPersonaResponse{
 		RegistrationToken: s.registrationToken,
 	})
+
+	log.Printf("New registration token generated successfully\n")
 }

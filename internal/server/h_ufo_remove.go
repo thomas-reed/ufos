@@ -34,6 +34,8 @@ func (s *Server) HandleRemoveUFO(w http.ResponseWriter, r *http.Request) {
 		filePath := filepath.Join(p.RootFS, ufoID+".blob")
 		if err = os.Remove(filePath); err != nil && !os.IsNotExist(err) {
 			log.Printf("error deleting file: %s\n", err)
+		} else {
+			log.Printf("%s deleted successfully\n", filePath)
 		}
 	}
 

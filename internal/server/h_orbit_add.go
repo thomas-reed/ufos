@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/thomas-reed/ufos/internal/api"
@@ -55,4 +56,6 @@ func (s *Server) HandleAddToOrbit(w http.ResponseWriter, r *http.Request) {
 		CreatedAt: res.CreatedAt,
 	},
 	)
+
+	log.Printf("%s successfully added to orbit\n", res.PersonaID)
 }

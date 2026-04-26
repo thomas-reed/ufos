@@ -1,6 +1,7 @@
 package server
 
 import (
+	"log"
 	"net/http"
 )
 
@@ -33,4 +34,6 @@ func (s *Server) HandleRemoveFromOrbit(w http.ResponseWriter, r *http.Request) {
 		http.StatusNoContent,
 		nil,
 	)
+
+	log.Printf("%s successfully removed from orbit\n", personaID)
 }

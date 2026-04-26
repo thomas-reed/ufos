@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"net/http"
 
+	"github.com/thomas-reed/ufos/internal/api"
 	"golang.org/x/term"
 )
 
-func HandleInit(cmd Command) error {
+func (c *Client) HandleInit(cmd Command) error {
 	fmt.Println("Welcome to UFOs!")
 	fmt.Println("(U)nidentifiable (F)ile/(O)bject (s)torage")
 	fmt.Println()
@@ -19,28 +21,71 @@ func HandleInit(cmd Command) error {
 		return err
 	}
 
-	url, err := getInput("the UFOs server URL", true)
-	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	p, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(p)
+	fmt.Println()
 
-	fmt.Printf("Confirm master password: ")
+	fmt.Print("Confirm master password: ")
 	pc, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password confirmation: %w", err)
 	}
 	defer clear(pc)
+	fmt.Println()
 
 	if !bytes.Equal(p, pc) {
 		return fmt.Errorf("Password and password confirmation do not match!")
 	}
 
-	return CreateNewVault(n, url, p)
+	d, err := getInput("the UFOs domain", true)
+	if err != nil {
+		return err
+	}
+	formatDomain(&d)
+
+	if err = CreateNewVault(n, d, p); err != nil {
+		return err
+	}
+
+	t, err := getInput("registration token", true)
+	if err != nil {
+		return err
+	}
+
+	if err = c.GetPersonaFromVault(n, p); err != nil {
+		return fmt.Errorf("Error getting persona from vault: %w", err)
+	}
+	defer clear(c.ActivePersona.PrivateSigningKey)
+	defer clear(c.ActivePersona.PrivateExchangeKey)
+	defer clear(c.MasterKey)
+
+	body := api.NewPersonaRequest{
+		ID:          c.PersonaID,
+		SigningKey:  c.ActivePersona.PublicSigningKey,
+		ExchangeKey: c.ActivePersona.PublicExchangeKey,
+	}
+
+	url := serverScheme + d + api.RoutePersonas
+	header := map[string]string{
+		api.HeaderRegistration: t,
+	}
+	res, status, err := ufoPublicRequest[api.CreatePersonaResponse](
+		c,
+		http.MethodPost,
+		url,
+		body,
+		header,
+	)
+	if err != nil {
+		return fmt.Errorf("Error creating persona: %w, (%d)", err, status)
+	}
+
+	if res.ID == c.PersonaID {
+		fmt.Printf("Persona '%s' has been registered on %s.\n", res.ID, d)
+	}
+	return nil
 }

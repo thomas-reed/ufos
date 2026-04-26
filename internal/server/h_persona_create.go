@@ -3,6 +3,7 @@ package server
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -73,4 +74,6 @@ func (s *Server) HandleCreatePersona(w http.ResponseWriter, r *http.Request) {
 	jsonResponse(w, http.StatusCreated, api.CreatePersonaResponse{
 		ID: req.ID,
 	})
+
+	log.Printf("Persona %s created successfully\n", req.ID)
 }

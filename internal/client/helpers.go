@@ -35,15 +35,7 @@ func buildContact(existing contacts.ContactMetadata) (contacts.ContactMetadata, 
 	if err != nil {
 		return contacts.ContactMetadata{}, err
 	}
-	if strings.HasPrefix(d, "http") {
-		scheme, domain, ok := strings.Cut(d, "://")
-		if !ok {
-			d = scheme // Domain must start with http?
-		} else {
-			d = domain
-		}
-	}
-	d = strings.TrimSuffix(d, "/")
+	formatDomain(&d)
 	contact.Domain = d
 
 	contact.FirstName, err = getInputWithDefault("first name", existing.FirstName, false)
@@ -183,9 +175,9 @@ func getInput(prompt string, required bool) (string, error) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		if required {
-			fmt.Printf("Enter %s (required) > ", prompt)
+			fmt.Printf("Enter %s (required): ", prompt)
 		} else {
-			fmt.Printf("Enter %s > ", prompt)
+			fmt.Printf("Enter %s: ", prompt)
 		}
 
 		if !scanner.Scan() {
@@ -203,9 +195,9 @@ func getInputWithDefault(prompt, defaultValue string, required bool) (string, er
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		if required {
-			fmt.Printf("Enter %s (required) [%s] > ", prompt, defaultValue)
+			fmt.Printf("Enter %s (required) [%s]: ", prompt, defaultValue)
 		} else {
-			fmt.Printf("Enter %s [%s] > ", prompt, defaultValue)
+			fmt.Printf("Enter %s [%s]: ", prompt, defaultValue)
 		}
 
 		if !scanner.Scan() {
@@ -237,6 +229,19 @@ func formatPrefix(prefix *string) {
 	}
 }
 
+func formatDomain(d *string) {
+	*d = strings.ToLower(*d)
+	if strings.HasPrefix(*d, "http") {
+		scheme, domain, ok := strings.Cut(*d, "://")
+		if !ok {
+			*d = scheme // Domain must start with http?
+		} else {
+			*d = domain
+		}
+	}
+	*d = strings.TrimSuffix(*d, "/")
+}
+
 func (c *Client) getRecursiveIDs(folder api.UFOMetadataFromHeader, searchSalt []byte) ([]string, error) {
 	// Get UFO Metadata to get the plaintext Prefix
 	metadataBytes, err := base64.StdEncoding.DecodeString(string(folder.MetadataBlob))
@@ -263,7 +268,7 @@ func (c *Client) getRecursiveIDs(folder api.UFOMetadataFromHeader, searchSalt []
 	queryValue.Add("prefix", hashedPrefix)
 
 	// Send the request to list UFOs
-	url := c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValue.Encode()
+	url := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValue.Encode()
 	children, _, err := ufoSignedRequest[[]api.UFO](
 		c,
 		http.MethodGet,

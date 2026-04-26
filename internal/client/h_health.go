@@ -8,7 +8,7 @@ import (
 	"github.com/thomas-reed/ufos/internal/api"
 )
 
-func (c *Client) HandleHealthCheck(cmd Command) error {
+func (c *Client) HandleHealth(cmd Command) error {
 	// Set up flags and parse
 	fs := flag.NewFlagSet("health", flag.ContinueOnError)
 
@@ -27,15 +27,15 @@ func (c *Client) HandleHealthCheck(cmd Command) error {
 		domain = &d
 	}
 
-	url := *domain + api.RouteHealth
-	_, status, err := ufoPublicRequest[struct{}](c, http.MethodGet, url, nil, nil)
+	url := serverScheme + *domain + api.RouteHealth
+	_, status, err := ufoPublicRequest[api.EmptyResponse](c, http.MethodGet, url, nil, nil)
 	if err != nil {
 		return err
 	}
 
 	switch status {
 	case http.StatusOK:
-		fmt.Println("Server is up!")
+		fmt.Printf("%s is up.\n", *domain)
 	default:
 		fmt.Printf("Unexpected status code (%d)\n", status)
 	}

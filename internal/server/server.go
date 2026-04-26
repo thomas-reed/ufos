@@ -28,6 +28,7 @@ type Server struct {
 	Port              string
 	mu                sync.RWMutex
 	WG                sync.WaitGroup
+	schemaDir         string
 	mode              string
 	tlsEnabled        bool
 	tls               tlsInfo
@@ -46,9 +47,10 @@ type tlsInfo struct {
 
 func NewServer() (*Server, error) {
 	s := Server{}
+	s.schemaDir = "/app/sql/schema"
 
 	_ = godotenv.Load()
-	
+
 	s.Port = os.Getenv("PORT")
 	if s.Port == "" {
 		return nil, fmt.Errorf("Port not found")
@@ -99,7 +101,7 @@ func NewServer() (*Server, error) {
 			return nil, fmt.Errorf("Could not open db for %s: %w", persona.ID, err)
 		}
 
-		if err := goose.Up(dbConn, "sql/schema"); err != nil {
+		if err := goose.Up(dbConn, s.schemaDir); err != nil {
 			return nil, fmt.Errorf("Migration failed for %s: %w", persona.ID, err)
 		}
 		persona.DBConn = dbConn
@@ -137,6 +139,7 @@ func (s *Server) initTLS() error {
 }
 
 func (s *Server) StartServer() error {
+	log.Printf("Server listening on port: %s\n", s.Port)
 	if s.tlsEnabled {
 		if err := s.HTTPServer.ListenAndServeTLS(s.tls.certFile, s.tls.keyFile); err != nil && err != http.ErrServerClosed {
 			return fmt.Errorf("Server start error: %w", err)
@@ -146,6 +149,5 @@ func (s *Server) StartServer() error {
 			return fmt.Errorf("Server start error: %w", err)
 		}
 	}
-	log.Printf("Server listening on port: %s\n", s.Port)
 	return nil
 }

@@ -38,12 +38,13 @@ func (c *Client) HandleUFODetails(cmd Command) error {
 	}
 
 	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(password)
+	fmt.Println()
 	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
@@ -53,8 +54,11 @@ func (c *Client) HandleUFODetails(cmd Command) error {
 	defer clear(c.MasterKey)
 
 	// Get UFO Metadata and print
-	ufoUrl := c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
-	ufoRes, _, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
+	ufoUrl := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
+	ufoRes, status, err := ufoSignedRequest[api.UFOMetadataFromHeader](c, http.MethodHead, ufoUrl, nil, nil)
+	if err != nil {
+		return fmt.Errorf("Error fetching ufo details: %w, (%d)", err, status)
+	}
 
 	if err = c.printUFODetails(ufoRes); err != nil {
 		return err

@@ -43,12 +43,13 @@ func (c *Client) HandleSearch(cmd Command) error {
 	}
 
 	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(password)
+	fmt.Println()
 	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
@@ -77,8 +78,8 @@ func (c *Client) HandleSearch(cmd Command) error {
 	}
 
 	// Send the request to search for UFOs
-	url := c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValues.Encode()
-	listRes, _, err := ufoSignedRequest[[]api.UFO](
+	url := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValues.Encode()
+	listRes, status, err := ufoSignedRequest[[]api.UFO](
 		c,
 		http.MethodGet,
 		url,
@@ -86,7 +87,7 @@ func (c *Client) HandleSearch(cmd Command) error {
 		nil,
 	)
 	if err != nil {
-		return fmt.Errorf("Error getting UFOs: %w", err)
+		return fmt.Errorf("Error getting UFOs: %w (%d)", err, status)
 	}
 	if len(listRes) == 0 {
 		fmt.Println("0 results.")

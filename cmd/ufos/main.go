@@ -18,8 +18,8 @@ func main() {
 	cmds := client.Commands{
 		Registry: make(map[string]func(cmd client.Command) error),
 	}
-	cmds.Register("ping", c.HandleHealthCheck)
-	cmds.Register("init", client.HandleInit)
+	cmds.Register("health", c.HandleHealth)
+	cmds.Register("init", c.HandleInit)
 	cmds.Register("new", c.HandleNewPersona)
 	cmds.Register("register", c.HandleCreatePersona)
 	cmds.Register("list", c.HandleList)

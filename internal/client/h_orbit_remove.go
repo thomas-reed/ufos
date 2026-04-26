@@ -38,12 +38,13 @@ func (c *Client) HandleOrbitRemove(cmd Command) error {
 	}
 
 	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(password)
+	fmt.Println()
 	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
@@ -53,13 +54,13 @@ func (c *Client) HandleOrbitRemove(cmd Command) error {
 	defer clear(c.MasterKey)
 
 	// Remove satellite from orbit
-	url := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
-	_, statusCode, err := ufoSignedRequest[api.EmptyResponse](c, http.MethodDelete, url, nil, nil)
+	url := serverScheme + c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
+	_, status, err := ufoSignedRequest[api.EmptyResponse](c, http.MethodDelete, url, nil, nil)
 	if err != nil {
 		return err
 	}
-	if statusCode != http.StatusNoContent {
-		return fmt.Errorf("Unexpected response status code (%d) for Persona ID %s", statusCode, *id)
+	if status != http.StatusNoContent {
+		return fmt.Errorf("Unexpected response status code (%d) for Persona ID %s", status, *id)
 	}
 
 	fmt.Printf("Satellite %s has been removed from your orbit.\n", *id)

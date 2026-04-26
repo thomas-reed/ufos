@@ -38,12 +38,13 @@ func (c *Client) HandleOrbitDetails(cmd Command) error {
 	}
 
 	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(password)
+	fmt.Println()
 	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
@@ -53,8 +54,11 @@ func (c *Client) HandleOrbitDetails(cmd Command) error {
 	defer clear(c.MasterKey)
 
 	// Get satellite data and print
-	url := c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
-	sat, _, err := ufoSignedRequest[api.Satellite](c, http.MethodGet, url, nil, nil)
+	url := serverScheme + c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *id
+	sat, status, err := ufoSignedRequest[api.Satellite](c, http.MethodGet, url, nil, nil)
+	if err != nil {
+		return fmt.Errorf("Error fetching orbit details: %w, (%d)", err, status)
+	}
 
 	if err = c.printSatelliteDetails(sat); err != nil {
 		return err

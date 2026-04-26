@@ -39,7 +39,7 @@ UFOs is a **Zero-Trust, Decentralized, and Social Filesystem** designed for sove
 | :--- | :--- | :--- |
 | `init` | `n` | Initializes the local vault. |
 | `new` | `n` | Bootstrap a new persona with a remote UFOs server. |
-| `register` | `n, t` | Register a persona with a remote UFOs server using the registration token from 'new' command, or the token the server admin sets in the 'UFO_BOOTSTRAP_TOKEN' env variable (for initial user bootstrapping). |
+| `register` | `n, d, t` | Register a persona with a remote UFOs server using the registration token from 'new' command, or the token the server admin sets in the 'UFO_BOOTSTRAP_TOKEN' env variable (for initial user bootstrapping). |
 | `ping` | `d` | Checks to see if a given server is responsive. |
 | `upload` | `n, f, p, t, a` | Upload a UFO, generate path hierarchy, and set access. |
 | `update` | `n, i, f, p, t, a` | Modify name, path, tags, or access list for a given UFO. |

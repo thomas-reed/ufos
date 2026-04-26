@@ -35,18 +35,17 @@ func (c *Client) HandleList(cmd Command) error {
 		name = &n
 	}
 
-	// If prefix doesn't start with '/', prepend '/' - handles empty case
-	if !strings.HasPrefix(*prefix, "/") {
-		*prefix = "/" + *prefix
-	}
+	// Ensure prefix exists and if properly formatted
+	formatPrefix(prefix)
 
 	// Get master password to decrypt vault, find persona
-	fmt.Printf("Enter master password: ")
+	fmt.Print("Enter master password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
 	}
 	defer clear(password)
+	fmt.Println()
 	err = c.GetPersonaFromVault(*name, password)
 	if err != nil {
 		return err
@@ -65,8 +64,8 @@ func (c *Client) HandleList(cmd Command) error {
 	queryValue.Add("prefix", hashedPrefix)
 
 	// Send the request to list UFOs
-	url := c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValue.Encode()
-	listRes, _, err := ufoSignedRequest[[]api.UFO](
+	url := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs + "?" + queryValue.Encode()
+	listRes, status, err := ufoSignedRequest[[]api.UFO](
 		c,
 		http.MethodGet,
 		url,
@@ -74,7 +73,7 @@ func (c *Client) HandleList(cmd Command) error {
 		nil,
 	)
 	if err != nil {
-		return fmt.Errorf("Error getting UFO list: %w", err)
+		return fmt.Errorf("Error getting UFO list: %w (%d)", err, status)
 	}
 	if len(listRes) == 0 {
 		fmt.Println("0 results.")

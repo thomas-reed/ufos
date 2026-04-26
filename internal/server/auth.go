@@ -121,16 +121,20 @@ func (s *Server) auth(next http.Handler, requiresBodyHash bool) http.Handler {
 		// Check the Hashed body (if required)
 		sigBase64 := r.Header.Get(api.HeaderSignature)
 		bodyHash := ""
-		if requiresBodyHash && r.Body != nil {
-			body, err := io.ReadAll(r.Body)
-			if err != nil {
-				respondWithError(w, http.StatusInternalServerError, "could not read body", err)
-				return
+		if requiresBodyHash {
+			var body []byte
+			var err error
+
+			if r.Body != nil {
+				body, err = io.ReadAll(r.Body)
+				if err != nil {
+					respondWithError(w, http.StatusInternalServerError, "could not read body", err)
+					return
+				}
+				r.Body = io.NopCloser(bytes.NewBuffer(body))
 			}
-			r.Body.Close()
+
 			bodyHash = crypto.HashAndBase64(body)
-			// Re-stuff the body so HandleCreateUFO can decode the JSON
-			r.Body = io.NopCloser(bytes.NewBuffer(body))
 		}
 
 		payload := fmt.Sprintf(
@@ -141,8 +145,13 @@ func (s *Server) auth(next http.Handler, requiresBodyHash bool) http.Handler {
 			timestampStr,
 			bodyHash,
 		)
+		fmt.Println(payload)
 
-		sig, _ := base64.StdEncoding.DecodeString(sigBase64)
+		sig, err := base64.StdEncoding.DecodeString(sigBase64)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, "invalid signature encoding", err)
+			return
+		}
 
 		if !crypto.VerifyRequest(persona.SigningKey, []byte(payload), sig) {
 			respondWithError(w, http.StatusUnauthorized, "invalid signature", nil)

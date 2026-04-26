@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -150,6 +151,8 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jsonResponse(w, status, ufoRes)
+
+	log.Printf("%s metadata created successfully\n", ufoRes.ID)
 }
 
 func addTagRefs(

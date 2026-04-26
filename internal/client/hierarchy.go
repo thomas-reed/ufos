@@ -58,7 +58,7 @@ func (c *Client) CreatePrefixHierarchy(prefix string, searchSalt []byte) error {
 		}
 
 		// Send the request to create the folder UFO database entry
-		folderUrl := c.ActivePersona.BaseURL + api.RouteUFOs
+		folderUrl := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs
 		folderRes, status, err := ufoSignedRequest[api.CreateUFOResponse](
 			c,
 			http.MethodPost,

@@ -21,7 +21,7 @@ const (
 )
 
 const (
-	vaultFilename = ".ufosvault.json"
+	vaultFilename = ".ufos_vault.json"
 
 	timeCost    uint32 = 3
 	memoryCost  uint32 = 32 * 1024

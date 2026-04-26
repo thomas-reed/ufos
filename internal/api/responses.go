@@ -12,6 +12,12 @@ const (
 	HeaderWrappedKey = "X-UFO-Wrapped-Key"
 )
 
+type EmptyResponse struct{}
+
+type ErrorResponse struct {
+	Err string `json:"error"`
+}
+
 type CreateUFOResponse struct {
 	ID        string    `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
@@ -27,14 +33,12 @@ type UploadUFOResponse struct {
 	Status objects.UFOStatus `json:"status"`
 }
 
-type EmptyResponse struct{}
-
 type InitPersonaResponse struct {
 	RegistrationToken string `json:"registration_token"`
 }
 
 type CreatePersonaResponse struct {
-	ID string `json:"ID"`
+	ID string `json:"id"`
 }
 
 type AddToOrbitResponse struct {
