@@ -1,0 +1,4 @@
+MODE=dev
+PORT=8080
+DATA_PATH=/data
+PROBE_URL=http://127.0.0.1:8080/healthz

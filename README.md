@@ -5,14 +5,14 @@ UFOs is a **Zero-Trust, Decentralized, and Sharable Filesystem** designed for so
 
 ## 🚀 The Core Philosophy
 
-- **Zero Trust**: The server is a "Blind Vault". It stores encrypted BLOBs and HMAC-SHA3-256 search indices. It never sees plaintext filenames, directory trees, or file contents.
-- **Hierarchical Privacy**: Directory structures are virtualized. The client germinates the tree using hashed path segments, making your folder structure a secret known only to the user.
+- **Zero Trust**: The server is a blind repository. It stores encrypted BLOBs and HMAC-SHA3-256 search indices. It never sees plaintext filenames, directory trees, or file contents.
+- **Hierarchical Privacy**: Directory structures are virtualized. The client creates the tree using hashed path segments, making your folder structure a secret known only to the user.
 - **Social Orbit**: An asynchronous sharing protocol based on X25519 ECDH (Elliptic-Curve Diffie-Hellman). Share UFOs securely with friends across different domains.
-- **Titan-Grade Streaming**: Built with Go's `io.Pipe` and `io.TeeReader` primitives, UFOs handles multi-gigabyte files with constant, minimal memory pressure.
+- **Downloading/Streaming**: Built with Go's `io.Pipe` and `io.TeeReader` primitives, UFOs handles multi-gigabyte files with constant, minimal memory pressure.
 
 ## 🛠 Features
 
-- **Hashed Path Germination**: Automatic creation of parent "folder" objects during upload/update to maintain a navigable hierarchy.
+- **Hashed Path Creation**: Automatic creation of parent "folder" objects during upload/update to maintain a navigable hierarchy.
 - **Multi-User Access Envelopes**: Granular access control where authorized guests receive a specialized cryptographic envelope that wraps the file decryption key.
 - **Deterministic Structural Integrity**: Unique constraints on hashed path/name combinations prevent collisions without leaking plaintext metadata.
 - **Object Hashing**: On-the-fly SHA3-256 verification during download to detect server-side tampering.
@@ -24,12 +24,33 @@ UFOs is a **Zero-Trust, Decentralized, and Sharable Filesystem** designed for so
 - **Identity**: Ed25519 (Signing) and X25519 (Key Exchange).
 - **Data Encryption**: AES-256-CTR for high-performance file streaming.
 - **Key Wrapping**: AES-256-GCM for metadata BLOBs and data encryption keys.
-- **Indexing**: HMAC-SHA3-256 for search tags and path prefixes to ensure "Server Blindness".
+- **Indexing**: HMAC-SHA3-256 for search tags and path prefixes to ensure server blindness.
 
 ### Security Posture
 - **Transport**: All API calls are signed using the persona's private signing key.
 - **Replay Protection**: Unique request IDs are tracked by the server to prevent replay attacks.
 - **Memory Hygiene**: Strict use of `clear()` for raw key buffers and sensitive metadata structs.
+
+## Install
+
+#### Required installs
+ - Go toolchain v1.25.x or later (might work with earlier versions but haven't tested)
+ - Docker/Podman
+
+#### Install Steps
+This is instuctions for locally hosting - which isn't super useful, but I'll update with hosting on your own hardware or cloud infra soon - want to implement SSL certs first.
+
+1. Clone the repo
+1. Copy the .envExample to .env:
+MODE: Leave as "dev" for now, once I've implemented letsEncrypt ACME handshake for SSL certs, the "prod" will work.
+PORT: the port you want to use to access your UFOs container
+DATA_PATH: the disk location of where all your UFO data will be stored (if using docker/podman, the path gets buried in /var/lib/docker/volumes)
+PROBE_URL: health check mapping for the service - make sure the port matches PORT you used above.
+1. Build the app: `go build -v -o bin/ ./...`
+1. Install the CLI: `go install ./cmd/ufos`
+1. Build/run the container: `docker compose up --build` or `podman compose up --build`
+1. Once the container is running, copy the inital registration token out of the logs
+1. Start with the `ufos init` command to create your vault and your first persona
 
 ---
 
@@ -37,15 +58,15 @@ UFOs is a **Zero-Trust, Decentralized, and Sharable Filesystem** designed for so
 
 | Command | Param Shortcuts | Description |
 | :--- | :--- | :--- |
-| `init` |  | Initializes the local vault. |
-| `new` | `n` | Bootstrap a new persona with a remote UFOs server. |
-| `register` | `n, d, t` | Register a persona with a remote UFOs server using the registration token from 'new' command, or the token the server admin sets in the 'UFO_BOOTSTRAP_TOKEN' env variable (for initial user bootstrapping). |
-| `health` | `d` | Checks to see if a given server is responsive. |
+| `init` |  | Initializes the local vault and creates the initial persona. |
+| `new` | `n` | Get a registration token for a new persona on your UFOs server. |
+| `register` | `n, d, t` | Register a persona with your UFOs server using the registration token from 'new' command, or the token the server admin sets in the 'UFO_BOOTSTRAP_TOKEN' env variable (for initial user bootstrapping). |
+| `health` | `d` | Checks to see if a given UFOs server is responsive. |
 | `upload` | `n, f, p, t, a` | Upload a UFO, generate path hierarchy, and set access. |
 | `update` | `n, i, f, p, t, a` | Modify name, path, tags, or access list for a given UFO. |
 | `download` | `n, i, t` | Download/stream from your UFOs server. |
 | `fetch` | `n, l, h, t` | Download/stream from someone else's server (requires permission). |
-| `list` | `n, p` | List the UFO hierarchy for a specific prefix. |
+| `list` | `n, p` | List the UFO hierarchy for a specific prefix ("folder"). |
 | `search` | `n, p, t` | Find UFOs globally using one or more hashed tags. |
 | `details` | `n, i` | View detailed metadata and access lists for a specific UFO. |
 | `remove` | `n, i` | Remove a UFO or recursively remove a directory tree. |
