@@ -3,7 +3,7 @@
 
 UFOs is a **Zero-Trust, Decentralized, and Sharable Filesystem** designed for sovereign data ownership. It allows users to store, share, and navigate UFOs across a network of private servers without the hosts ever seeing the filenames, directory structures, or file contents.
 
-## 🚀 The Core Philosophy
+## 💡 The Core Philosophy
 
 - **Zero Trust**: The server is a blind repository. It stores encrypted BLOBs and HMAC-SHA3-256 search indices. It never sees plaintext filenames, directory trees, or file contents.
 - **Hierarchical Privacy**: Directory structures are virtualized. The client creates the tree using hashed path segments, making your folder structure a secret known only to the user.
@@ -31,7 +31,7 @@ UFOs is a **Zero-Trust, Decentralized, and Sharable Filesystem** designed for so
 - **Replay Protection**: Unique request IDs are tracked by the server to prevent replay attacks.
 - **Memory Hygiene**: Strict use of `clear()` for raw key buffers and sensitive metadata structs.
 
-## Install
+## 🚀 Install
 
 #### Required installs
  - Go toolchain v1.25.x or later (might work with earlier versions but haven't tested)
