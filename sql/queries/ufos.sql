@@ -55,7 +55,7 @@ SET
   metadata = COALESCE(sqlc.narg('metadata'), metadata),
   upload_status = COALESCE(sqlc.narg('upload_status'), upload_status),
   updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
+WHERE id = sqlc.arg('id')
 RETURNING id, updated_at;
 
 -- name: UpdateStatus :one

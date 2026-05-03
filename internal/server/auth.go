@@ -52,61 +52,47 @@ func (s *Server) auth(next http.Handler, requiresBodyHash bool) http.Handler {
 			return
 		}
 
-		// Check the Persona
 		personaID := r.Header.Get(api.HeaderPersona)
-		persona, ok := s.GetPersona(personaID)
-		if !ok {
-			// Ensure it must be a GET or HEAD for /api/ufos/{uuid}
-			ufoID := r.PathValue("uuid")
-			isAllowedMethod := r.Method == http.MethodGet
-			isCorrectPath := strings.Contains(r.URL.Path, "/api/ufos/")
-			if !isAllowedMethod || !isCorrectPath || ufoID == "" {
-				respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
-				return
-			}
-			// Check if it's an authorized guest
-			hostID := r.Header.Get(api.HeaderHost)
-			if hostID == "" {
-				respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
-				return
-			}
+		hostID := r.Header.Get(api.HeaderHost)
+		ufoID := r.PathValue("uuid")
+
+		persona, local := s.GetPersona(personaID)
+
+		// Guest path only for GET on /api/ufos/{uuid}
+		isAllowedMethod := r.Method == http.MethodGet
+		isCorrectPath := strings.Contains(r.URL.Path, api.RouteUFOs)
+		isGuestAllowed := isAllowedMethod && isCorrectPath && ufoID != "" && hostID != ""
+
+		if isGuestAllowed {
+			// Host must be local
 			host, found := s.GetPersona(hostID)
 			if !found {
 				respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
 				return
 			}
-			// Ensure the guest has access for that particular UFO
-			count, err := host.db.GetUFOAccessForUser(
-				r.Context(),
-				database.GetUFOAccessForUserParams{
-					UfoID:     ufoID,
-					PersonaID: personaID,
-				},
-			)
+
+			// Guest must have UFO access for given file
+			count, err := host.db.GetUFOAccessForUser(r.Context(), database.GetUFOAccessForUserParams{
+				UfoID:     ufoID,
+				PersonaID: personaID,
+			})
 			if err != nil {
-				respondWithError(
-					w,
-					http.StatusInternalServerError,
-					"Error getting authorization from db",
-					err,
-				)
+				respondWithError(w, http.StatusInternalServerError, "Error getting authorization from db", err)
 				return
 			}
 			if count < 1 {
 				respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
 				return
 			}
-			// Guest is now authorized, merge guest and host info into persona object for hash check
+
+			// Ensure guest is in Persona's orbit and get public keys
 			personaData, err := host.db.GetFromOrbit(r.Context(), personaID)
 			if err != nil {
-				respondWithError(
-					w,
-					http.StatusInternalServerError,
-					"Error getting user data from db",
-					err,
-				)
+				respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
 				return
 			}
+
+			// merge Guest data with host local data to send to handler
 			persona = &Persona{
 				ID:          personaData.PersonaID,
 				SigningKey:  personaData.SigningKey,
@@ -116,6 +102,10 @@ func (s *Server) auth(next http.Handler, requiresBodyHash bool) http.Handler {
 				DBConn:      host.DBConn,
 				db:          host.db,
 			}
+		// If guest is not allowed and persona is not local, reject
+		} else if !local {
+			respondWithError(w, http.StatusUnauthorized, "unauthorized", nil)
+			return
 		}
 
 		// Check the Hashed body (if required)
@@ -145,7 +135,6 @@ func (s *Server) auth(next http.Handler, requiresBodyHash bool) http.Handler {
 			timestampStr,
 			bodyHash,
 		)
-		fmt.Println(payload)
 
 		sig, err := base64.StdEncoding.DecodeString(sigBase64)
 		if err != nil {

@@ -93,21 +93,20 @@ func (s *Server) HandleUpdateUFO(w http.ResponseWriter, r *http.Request) {
 		respondWithError(
 			w,
 			http.StatusInternalServerError,
-			"failed to create ufo tag",
+			"failed to delete ufo tag",
 			err,
 		)
 		return
 	}
 	for _, tag := range req.TagHashes {
-		_, err := qtx.AddUFOTag(r.Context(), database.AddUFOTagParams{
+		if err := qtx.AddUFOTag(r.Context(), database.AddUFOTagParams{
 			UfoID:   updated.ID,
 			TagHash: tag,
-		})
-		if err != nil {
+		}); err != nil {
 			respondWithError(
 				w,
 				http.StatusInternalServerError,
-				"failed to create ufo tag",
+				"failed to add ufo tag",
 				err,
 			)
 			return

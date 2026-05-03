@@ -17,6 +17,7 @@ func (c *Client) printUFOList(list []api.UFO) error {
 	w := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
 
 	// Print the Header
+	fmt.Println()
 	fmt.Fprintln(w, "ID\tTYPE\tPREFIX\tNAME\tLINK")
 	fmt.Fprintln(w, "--\t----\t------\t----\t----")
 
@@ -46,15 +47,16 @@ func (c *Client) printUFOList(list []api.UFO) error {
 			metadata.Name,
 			link,
 		)
+
 		clear(metadataBytes)
 		metadata = objects.ObjectMetadata{}
 	}
 	return w.Flush()
 }
 
-func (c *Client) printUFODetails(ufo api.UFOMetadataFromHeader) error {
+func (c *Client) printUFODetails(metadataBlob []byte) error {
 	// Decrypt UFO metadata
-	ufoMetaBytes, err := crypto.Decrypt(c.MasterKey, ufo.MetadataBlob)
+	ufoMetaBytes, err := crypto.Decrypt(c.MasterKey, metadataBlob)
 	if err != nil {
 		return err
 	}
@@ -100,7 +102,9 @@ func (c *Client) printUFODetails(ufo api.UFOMetadataFromHeader) error {
 		sizeStr = "-" // Folders don't have a binary size
 	}
 
+	fmt.Println()
 	fmt.Println("UFO DETAILS:")
+	fmt.Println("------------")
 	fmt.Printf("Name: %s\n", ufoMetadata.Name)
 	fmt.Printf("Prefix: %s\n", ufoMetadata.Prefix)
 	fmt.Printf("Type: %s\n", filetype)
@@ -115,6 +119,7 @@ func (c *Client) printUFODetails(ufo api.UFOMetadataFromHeader) error {
 			fmt.Printf("- %s %s\n", contact.FirstName, contact.LastName)
 		}
 	}
+	fmt.Println("------------")
 
 	ufoMetadata = objects.ObjectMetadata{}
 	return nil
@@ -123,6 +128,7 @@ func (c *Client) printUFODetails(ufo api.UFOMetadataFromHeader) error {
 func (c *Client) printOrbitList(orbit []api.Satellite) error {
 	// Print the Header
 	w := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
+	fmt.Println()
 	fmt.Fprintln(w, "NAME\tID\tDOMAIN\tCOMPANY")
 	fmt.Fprintln(w, "----\t--\t------\t-------")
 
@@ -145,6 +151,7 @@ func (c *Client) printOrbitList(orbit []api.Satellite) error {
 			metadata.Domain,
 			metadata.Company,
 		)
+
 		clear(metadataBytes)
 		metadata = contacts.ContactMetadata{}
 	}
@@ -162,8 +169,11 @@ func (c *Client) printSatelliteDetails(sat api.Satellite) error {
 	if err = json.Unmarshal(satMetaBytes, &satMetadata); err != nil {
 		return fmt.Errorf("Error unmarshalling satellite metadata: %w", err)
 	}
+	fmt.Println()
 	fmt.Println("CONTACT DETAILS:")
+	fmt.Println("----------------")
 	fmt.Printf("Name: %s %s\n", satMetadata.FirstName, satMetadata.LastName)
+	fmt.Printf("Company: %s\n", satMetadata.Company)
 	fmt.Printf("Domain: %s\n", satMetadata.Domain)
 	fmt.Printf("Notes:\n%s\n", satMetadata.Notes)
 	fmt.Println("Phones:")
@@ -186,10 +196,26 @@ func (c *Client) printSatelliteDetails(sat api.Satellite) error {
 			}
 			fmt.Printf("- %s, %s  %s\n", address.City, address.Region, address.PostalCode)
 			fmt.Printf("- %s\n", address.Country)
-			fmt.Println("---")
+			fmt.Println("----------------")
 		}
 	}
 
 	satMetadata = contacts.ContactMetadata{}
 	return nil
+}
+
+func (c *Commands) PrintHelp(cmd Command) error {
+	w := tabwriter.NewWriter(os.Stdout, 0, 8, 2, ' ', 0)
+	fmt.Println()
+	fmt.Println("UFOs Help")
+	fmt.Println("---------")
+	fmt.Println("DESCRIPTION:")
+	fmt.Println("(U)nidentifiable (F)ile/(O)bject (s)tore is a zero-trust, decentralized, and sharable filesystem designed for sovereign data ownership. It allows users to store, share, and navigate UFOs across a network of private servers without the hosts ever seeing the filenames, directory structures, or file contents.")
+	fmt.Println()
+	fmt.Println("COMMANDS:")
+	for name, cmd := range c.Registry {
+		fmt.Fprintf(w, "%s\t%s\n", name, cmd.Help)
+	}
+	
+	return w.Flush()
 }

@@ -7,18 +7,26 @@ type Command struct {
 	Args []string
 }
 
-type Commands struct {
-	Registry map[string]func(cmd Command) error
+type CommandInfo struct {
+	Handler func(cmd Command) error
+	Help    string
 }
 
-func (c *Commands) Register(name string, f func(Command) error) {
-	c.Registry[name] = f
+type Commands struct {
+	Registry map[string]CommandInfo
+}
+
+func (c *Commands) Register(name string, handler func(Command) error, help string) {
+	c.Registry[name] = CommandInfo{
+		Handler: handler,
+		Help:    help,
+	}
 }
 
 func (c *Commands) Run(cmd Command) error {
-	cmdFunc, found := c.Registry[cmd.Name]
+	cmdInfo, found := c.Registry[cmd.Name]
 	if !found {
 		return fmt.Errorf("%s not found in list of commands", cmd.Name)
 	}
-	return cmdFunc(cmd)
+	return cmdInfo.Handler(cmd)
 }

@@ -1,7 +1,7 @@
 # UFOs
 ### Unidentifiable File/Object store
 
-UFOs is a **Zero-Trust, Decentralized, and Social Filesystem** designed for sovereign data ownership. It allows users to store, share, and navigate UFOs across a network of private servers without the host ever seeing the filenames, directory structures, or file contents.
+UFOs is a **Zero-Trust, Decentralized, and Sharable Filesystem** designed for sovereign data ownership. It allows users to store, share, and navigate UFOs across a network of private servers without the hosts ever seeing the filenames, directory structures, or file contents.
 
 ## 🚀 The Core Philosophy
 
@@ -37,18 +37,19 @@ UFOs is a **Zero-Trust, Decentralized, and Social Filesystem** designed for sove
 
 | Command | Param Shortcuts | Description |
 | :--- | :--- | :--- |
-| `init` | `n` | Initializes the local vault. |
+| `init` |  | Initializes the local vault. |
 | `new` | `n` | Bootstrap a new persona with a remote UFOs server. |
 | `register` | `n, d, t` | Register a persona with a remote UFOs server using the registration token from 'new' command, or the token the server admin sets in the 'UFO_BOOTSTRAP_TOKEN' env variable (for initial user bootstrapping). |
-| `ping` | `d` | Checks to see if a given server is responsive. |
+| `health` | `d` | Checks to see if a given server is responsive. |
 | `upload` | `n, f, p, t, a` | Upload a UFO, generate path hierarchy, and set access. |
 | `update` | `n, i, f, p, t, a` | Modify name, path, tags, or access list for a given UFO. |
-| `download` | `n, i, h, t` | Download/stream from a UFOs server. |
+| `download` | `n, i, t` | Download/stream from your UFOs server. |
+| `fetch` | `n, l, h, t` | Download/stream from someone else's server (requires permission). |
 | `list` | `n, p` | List the UFO hierarchy for a specific prefix. |
 | `search` | `n, p, t` | Find UFOs globally using one or more hashed tags. |
 | `details` | `n, i` | View detailed metadata and access lists for a specific UFO. |
 | `remove` | `n, i` | Remove a UFO or recursively remove a directory tree. |
-| `orbit add` | `n` | Add a satellite (a fully qualified persona - `id@domain`) to your social orbit. |
+| `orbit add` | `n` | Add a satellite to your social orbit. |
 | `orbit list` | `n` | View all satellites currently in your orbit. |
 | `orbit remove` | `n, i` | Remove a satellite from your orbit. |
 | `orbit details` | `n, i` | View satellite datails. |

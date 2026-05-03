@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -68,7 +69,7 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 			respondWithError(
 				w,
 				http.StatusInternalServerError,
-				"failed to create ufo tag",
+				fmt.Sprintf("failed to add ufo tags to %s", ufo.ID),
 				err,
 			)
 			return
@@ -112,7 +113,7 @@ func (s *Server) HandleCreateUFO(w http.ResponseWriter, r *http.Request) {
 			respondWithError(
 				w,
 				http.StatusInternalServerError,
-				"failed to create ufo tag",
+				fmt.Sprintf("failed to add ufo tags to %s", ufo.ID),
 				err,
 			)
 			return
@@ -162,7 +163,7 @@ func addTagRefs(
 	tagHashes []string,
 ) error {
 	for _, tag := range tagHashes {
-		if _, err := qtx.AddUFOTag(ctx, database.AddUFOTagParams{
+		if err := qtx.AddUFOTag(ctx, database.AddUFOTagParams{
 			UfoID:   ufoID,
 			TagHash: tag,
 		}); err != nil {

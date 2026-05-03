@@ -3,8 +3,8 @@ package client
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"net/http"
+	"os"
 
 	"github.com/thomas-reed/ufos/internal/api"
 	"golang.org/x/term"
@@ -21,7 +21,7 @@ func (c *Client) HandleInit(cmd Command) error {
 		return err
 	}
 
-	fmt.Print("Enter master password: ")
+	fmt.Print("Enter desired vault password: ")
 	p, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
@@ -29,7 +29,7 @@ func (c *Client) HandleInit(cmd Command) error {
 	defer clear(p)
 	fmt.Println()
 
-	fmt.Print("Confirm master password: ")
+	fmt.Print("Confirm vault password: ")
 	pc, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password confirmation: %w", err)

@@ -15,7 +15,7 @@ import (
 
 func (c *Client) HandleOrbitUpdate(cmd Command) error {
 	// Set up flags and parse
-	fs := flag.NewFlagSet("orbit update", flag.ContinueOnError)
+	fs := flag.NewFlagSet(cmd.Name, flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
@@ -40,8 +40,8 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 		return fmt.Errorf("Enter Persona ID of the user you wish to update with '--id' or '-i'")
 	}
 
-	// Get master password to decrypt vault, find persona
-	fmt.Print("Enter master password: ")
+	// Get vault password to decrypt vault, find persona
+	fmt.Print("Enter your vault password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)
@@ -89,7 +89,7 @@ func (c *Client) HandleOrbitUpdate(cmd Command) error {
 	url := serverScheme + contact.Domain + api.RoutePersonas + "/" + contact.PersonaID
 	keys, keyStatus, err := ufoPublicRequest[api.PersonaKeysResponse](c, http.MethodGet, url, nil, nil)
 	if err != nil {
-		return fmt.Errorf("Error fetching public keys: %w, (%d)", err, keyStatus)
+		return fmt.Errorf("Error fetching public keys (%d): %w", keyStatus, err)
 	}
 	// Save user to orbit and send
 	orbitUrl := serverScheme + c.ActivePersona.BaseURL + api.RouteOrbit

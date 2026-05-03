@@ -9,13 +9,9 @@ import (
 	"context"
 )
 
-const addUFOTag = `-- name: AddUFOTag :one
+const addUFOTag = `-- name: AddUFOTag :exec
 INSERT OR IGNORE INTO ufo_tags (ufo_id, tag_hash)
-VALUES (
-  ?,
-  ?
-)
-RETURNING ufo_id
+VALUES (?, ?)
 `
 
 type AddUFOTagParams struct {
@@ -23,11 +19,9 @@ type AddUFOTagParams struct {
 	TagHash string `json:"tag_hash"`
 }
 
-func (q *Queries) AddUFOTag(ctx context.Context, arg AddUFOTagParams) (string, error) {
-	row := q.db.QueryRowContext(ctx, addUFOTag, arg.UfoID, arg.TagHash)
-	var ufo_id string
-	err := row.Scan(&ufo_id)
-	return ufo_id, err
+func (q *Queries) AddUFOTag(ctx context.Context, arg AddUFOTagParams) error {
+	_, err := q.db.ExecContext(ctx, addUFOTag, arg.UfoID, arg.TagHash)
+	return err
 }
 
 const deleteUFOTags = `-- name: DeleteUFOTags :exec

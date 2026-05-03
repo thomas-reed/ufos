@@ -299,13 +299,13 @@ func (q *Queries) UpdateStatus(ctx context.Context, arg UpdateStatusParams) (Upd
 const updateUFO = `-- name: UpdateUFO :one
 UPDATE ufos
 SET
-  name_hash = COALESCE(?2, name_hash),
-  prefix_hash = COALESCE(?3, prefix_hash),
-  size_bytes = COALESCE(?4, size_bytes),
-  metadata = COALESCE(?5, metadata),
-  upload_status = COALESCE(?6, upload_status),
+  name_hash = COALESCE(?1, name_hash),
+  prefix_hash = COALESCE(?2, prefix_hash),
+  size_bytes = COALESCE(?3, size_bytes),
+  metadata = COALESCE(?4, metadata),
+  upload_status = COALESCE(?5, upload_status),
   updated_at = CURRENT_TIMESTAMP
-WHERE id = ?
+WHERE id = ?6
 RETURNING id, updated_at
 `
 

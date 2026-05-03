@@ -13,7 +13,7 @@ import (
 
 func (c *Client) HandleCreatePersona(cmd Command) error {
 	// Set up flags and parse
-	fs := flag.NewFlagSet("register", flag.ContinueOnError)
+	fs := flag.NewFlagSet(cmd.Name, flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona to register")
 	fs.StringVar(name, "n", "", "alias for --name")
@@ -42,7 +42,6 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 		formatDomain(&d)
 		domain = &d
 	}
-	
 
 	// If token wasn't in Args, prompt
 	if *token == "" {
@@ -53,8 +52,8 @@ func (c *Client) HandleCreatePersona(cmd Command) error {
 		token = &t
 	}
 
-	// Get master password to decrypt vault
-	fmt.Print("Enter master password: ")
+	// Get vault password to decrypt vault
+	fmt.Print("Enter your vault password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)

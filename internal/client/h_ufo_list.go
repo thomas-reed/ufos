@@ -15,7 +15,7 @@ import (
 
 func (c *Client) HandleList(cmd Command) error {
 	// Set up flags and parse
-	fs := flag.NewFlagSet("list", flag.ContinueOnError)
+	fs := flag.NewFlagSet(cmd.Name, flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
@@ -38,8 +38,8 @@ func (c *Client) HandleList(cmd Command) error {
 	// Ensure prefix exists and if properly formatted
 	formatPrefix(prefix)
 
-	// Get master password to decrypt vault, find persona
-	fmt.Print("Enter master password: ")
+	// Get vault password to decrypt vault, find persona
+	fmt.Print("Enter your vault password: ")
 	password, err := term.ReadPassword(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("Error reading password: %w", err)

@@ -34,7 +34,9 @@ func (s *Server) HandleGetUFOMetadata(w http.ResponseWriter, r *http.Request) {
 
 	// Construct headers
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Header().Set("Content-Length", fmt.Sprintf("%d", ufo.SizeBytes))
+	if ufo.SizeBytes >= 0 {
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", ufo.SizeBytes))
+	}
 	w.Header().Set(api.HeaderMetadata, base64.StdEncoding.EncodeToString(ufo.Metadata))
 
 	w.WriteHeader(http.StatusOK)

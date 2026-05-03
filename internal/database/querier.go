@@ -11,7 +11,7 @@ import (
 type Querier interface {
 	AddToOrbit(ctx context.Context, arg AddToOrbitParams) (AddToOrbitRow, error)
 	AddUFOAccess(ctx context.Context, arg AddUFOAccessParams) (string, error)
-	AddUFOTag(ctx context.Context, arg AddUFOTagParams) (string, error)
+	AddUFOTag(ctx context.Context, arg AddUFOTagParams) error
 	CreateUFO(ctx context.Context, arg CreateUFOParams) (CreateUFORow, error)
 	CreateUFOFolder(ctx context.Context, arg CreateUFOFolderParams) (CreateUFOFolderRow, error)
 	DeleteFromOrbit(ctx context.Context, personaID string) (string, error)

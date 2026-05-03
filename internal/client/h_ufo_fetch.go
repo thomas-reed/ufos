@@ -6,27 +6,30 @@ import (
 	"crypto/cipher"
 	"crypto/sha3"
 	"encoding/base64"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/thomas-reed/ufos/internal/api"
 	"github.com/thomas-reed/ufos/internal/crypto"
-	"github.com/thomas-reed/ufos/internal/objects"
 	"golang.org/x/term"
 )
 
-func (c *Client) HandleDownloadUFO(cmd Command) error {
+func (c *Client) HandleFetchUFO(cmd Command) error {
 	// Set up flags and parse
 	fs := flag.NewFlagSet(cmd.Name, flag.ContinueOnError)
 
 	name := fs.String("name", "", "The name of the persona you wish to use. Specify '@<domain>' if you have use the same persona name for multiple domains)")
 	fs.StringVar(name, "n", "", "alias for --name")
-	id := fs.String("id", "", "The id of the file you want to download")
-	fs.StringVar(id, "i", "", "alias for --id")
+	url := fs.String("url", "", "The direct url to the UFO you want to fetch from someone else's server")
+	fs.StringVar(url, "u", "", "alias for --url")
+	host := fs.String("host", "", "The Persona ID of the user hosting the UFO")
+	fs.StringVar(host, "h", "", "alias for --host")
 	to := fs.String("to", "", "The local path where you want to save the file you are downloading. Defaults to the current directory")
 	fs.StringVar(to, "t", "", "alias for --to")
 
@@ -43,9 +46,14 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 		name = &n
 	}
 
-	// If id wasn't in Args, error out
-	if *id == "" {
-		return fmt.Errorf("Enter id of UFO you wish to download using '--id' or '-i'")
+	// If url wasn't in Args, error out
+	if *url == "" {
+		return fmt.Errorf("Enter url of UFO you wish to fetch using '--url' or '-u'")
+	}
+
+	// If host wasn't in Args, error out
+	if *host == "" {
+		return fmt.Errorf("Enter Host's Persona ID using '--host' or '-h'")
 	}
 
 	// Get vault password to decrypt vault, find persona
@@ -64,8 +72,11 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 	defer clear(c.ActivePersona.PrivateExchangeKey)
 	defer clear(c.MasterKey)
 
-	url := serverScheme + c.ActivePersona.BaseURL + api.RouteUFOs + "/" + *id
-	res, err := ufoDownloadStream(c, url, nil)
+	headers := map[string]string{
+		api.HeaderHost: *host,
+	}
+
+	res, err := ufoDownloadStream(c, *url, headers)
 	if err != nil {
 		return err
 	}
@@ -79,34 +90,63 @@ func (c *Client) HandleDownloadUFO(cmd Command) error {
 	defer clear(hash)
 
 	// Get response header
-	metadataBase64 := res.Header.Get(api.HeaderMetadata)
+	wrappedKeyBase64 := res.Header.Get(api.HeaderWrappedKey)
 
-	if metadataBase64 != "" {
-		encryptedMetadata, err := base64.StdEncoding.DecodeString(metadataBase64)
+	if wrappedKeyBase64 != "" {
+		envelope, err := base64.StdEncoding.DecodeString(wrappedKeyBase64)
 		if err != nil {
-			return fmt.Errorf("Error decoding base64 metadata: %w", err)
+			return fmt.Errorf("Error decoding base64 envelope: %w", err)
 		}
-		metadataBytes, err := crypto.Decrypt(c.MasterKey, encryptedMetadata)
-		if err != nil {
-			return err
+		if len(envelope) < 49 {
+			return fmt.Errorf("Malformed envelope: header missing")
 		}
-		defer clear(metadataBytes)
-		var metadata objects.ObjectMetadata
-		if err = json.Unmarshal(metadataBytes, &metadata); err != nil {
-			return fmt.Errorf("Error unmarshalling decrypted metadata: %w", err)
+		iv = envelope[:16]
+		hash = envelope[16:48]
+		nameLen := int(envelope[48])
+
+		// Get filename and wrapped key
+		minRequired := 49 + nameLen + crypto.CryptoMetadataV1Size
+		if len(envelope) < minRequired {
+			return fmt.Errorf("Malformed envelope: filename or key truncated")
 		}
-		iv = metadata.IV
-		hash = metadata.PlaintextHash
-		filename = metadata.Name
-		dek, err = crypto.Decrypt(
-			crypto.DeriveWrappingKey(c.MasterKey, c.PersonaID),
-			metadata.OwnerWrappedKey,
+		filename = string(envelope[49 : 49+nameLen])
+		wrappedKey := envelope[49+nameLen:]
+
+		// Get Persona data from Orbit
+		var hostPublicKey []byte
+		orbitUrl := serverScheme + c.ActivePersona.BaseURL + api.RouteOrbit + "/" + *host
+		if personaData, status, err := ufoSignedRequest[api.Satellite](c, http.MethodGet, orbitUrl, nil, nil); err == nil && status == http.StatusOK {
+			hostPublicKey = personaData.ExchangeKey
+		} else {
+			// Host must not be in the Guest's orbit for some reason, so fetch public keys from host's server
+			log.Printf("Failed to get host's public keys from orbit (%d): %s\nFetching directly from host server\n", status, err)
+			hostURL, _, ok := strings.Cut(*url, api.RouteUFOs)
+			if !ok {
+				// This should never happen, because the downloadStream would have failed
+				return fmt.Errorf("Invalid URL")
+			}
+			hostURL = hostURL + api.RoutePersonas + "/" + *host
+			keys, keyStatus, err := ufoPublicRequest[api.PersonaKeysResponse](c, http.MethodGet, hostURL, nil, nil)
+			if err != nil || keyStatus != http.StatusOK {
+				return fmt.Errorf("Failed to fetch Host's public key (%d): %w", keyStatus, err)
+			}
+			hostPublicKey = keys.ExchangeKey
+		}
+		sharedSecret, err := crypto.GenerateSharedSecret(
+			c.ActivePersona.PrivateExchangeKey,
+			hostPublicKey,
 		)
 		if err != nil {
 			return err
 		}
+		guestWrappingKey := crypto.DeriveWrappingKey(sharedSecret, c.PersonaID)
+		clear(sharedSecret)
+		dek, err = crypto.Decrypt(guestWrappingKey, wrappedKey)
+		if err != nil {
+			return err
+		}
 	} else {
-		return fmt.Errorf("Server returned no metadata!")
+		return fmt.Errorf("Server returned no wrapped key!")
 	}
 
 	// Setup the Block Cipher
