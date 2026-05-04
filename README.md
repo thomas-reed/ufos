@@ -1,7 +1,7 @@
 # UFOs
 ### Unidentifiable File/Object store
 
-UFOs is a **Zero-Trust, Decentralized, and Sharable Filesystem** designed for sovereign data ownership. It allows users to store, share, and navigate UFOs across a network of private servers without the hosts ever seeing the filenames, directory structures, or file contents.
+UFOs is a **Zero-Trust, Decentralized, and Sharable Object Storage system** designed for sovereign data ownership. It allows users to store, share, and navigate UFOs across a network of private servers without the hosts ever seeing the filenames, directory structures, or file contents.
 
 ## 💡 The Core Philosophy
 
