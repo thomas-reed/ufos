@@ -60,7 +60,7 @@ func (c *Client) GetPersonaFromVault(personaName string, password []byte) error 
 	switch v.Version {
 	case VaultV1:
 		if err = c.getPersonaFromVaultV1(v, personaName, password); err != nil {
-			return fmt.Errorf("Local access DENIED:\n%w", err)
+			return fmt.Errorf("Local access DENIED: %w", err)
 		}
 
 	default:

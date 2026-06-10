@@ -43,7 +43,7 @@ cmds.Register("orbit", c.HandleOrbitCmds, "Manage your orbit. Subcommands: add, 
 
 	// run given command
 	if err = cmds.Run(client.Command{Name: cmdName, Args: cmdArgs}); err != nil {
-		log.Fatalf("System malfunction: Error running %s\n %s\n", cmdName, err)
+		log.Fatalf("System malfunction: Error running %s\n%s\n", cmdName, err)
 	}
 
 	os.Exit(0)
