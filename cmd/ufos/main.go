@@ -36,14 +36,14 @@ cmds.Register("orbit", c.HandleOrbitCmds, "Manage your orbit. Subcommands: add, 
 
 	// parse cmd line arguments
 	if len(os.Args) < 2 {
-		log.Fatalln("Too few arguments.  Usage: ufos <command> [args...]")
+		log.Fatalln("Command error: Too few arguments.  Usage: ufos <command> [args...]")
 	}
 	cmdName := strings.ToLower(os.Args[1])
 	cmdArgs := os.Args[2:]
 
 	// run given command
 	if err = cmds.Run(client.Command{Name: cmdName, Args: cmdArgs}); err != nil {
-		log.Fatalf("Error running %s command: %s\n", cmdName, err)
+		log.Fatalf("System malfunction: Error running %s\n %s\n", cmdName, err)
 	}
 
 	os.Exit(0)

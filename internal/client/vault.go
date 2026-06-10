@@ -60,12 +60,13 @@ func (c *Client) GetPersonaFromVault(personaName string, password []byte) error 
 	switch v.Version {
 	case VaultV1:
 		if err = c.getPersonaFromVaultV1(v, personaName, password); err != nil {
-			return err
+			return fmt.Errorf("Local access DENIED:\n%w", err)
 		}
 
 	default:
 		return fmt.Errorf("Invalid vault version")
 	}
+	fmt.Println("Local access GRANTED")
 	return nil
 }
 
@@ -333,16 +334,10 @@ func getVaultFilepath() (string, error) {
 	return filepath.Join(homedir, vaultFilename), nil
 }
 
-func CreateNewVault(personaName, baseURL string, password []byte) error {
-	vaultPath, err := getVaultFilepath()
-	if err != nil {
-		return err
-	}
-	if _, err := os.Stat(vaultPath); err == nil {
-		return fmt.Errorf("Vault already exists")
-	}
+func CreateNewVault(vaultPath, personaName, baseURL string, password []byte) error {
 	var v Vault
 	var vaultKey []byte
+	var err error
 
 	v.Version = VaultV1
 	v.KDFParams.TimeCost = timeCost

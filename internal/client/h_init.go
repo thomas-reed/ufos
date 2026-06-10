@@ -11,6 +11,15 @@ import (
 )
 
 func (c *Client) HandleInit(cmd Command) error {
+	// Check if a vault exists and error out immediately
+	vaultPath, err := getVaultFilepath()
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(vaultPath); err == nil {
+		return fmt.Errorf("Vault already exists")
+	}
+
 	fmt.Println("Welcome to UFOs!")
 	fmt.Println("(U)nidentifiable (F)ile/(O)bject (s)torage")
 	fmt.Println()
@@ -47,7 +56,7 @@ func (c *Client) HandleInit(cmd Command) error {
 	}
 	formatDomain(&d)
 
-	if err = CreateNewVault(n, d, p); err != nil {
+	if err = CreateNewVault(vaultPath, n, d, p); err != nil {
 		return err
 	}
 
