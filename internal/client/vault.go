@@ -85,7 +85,7 @@ func (c *Client) getPersonaFromVaultV1(
 	defer clear(vaultKey)
 	data, err := crypto.Decrypt(vaultKey, v.Payload)
 	if err != nil {
-		return err
+		return fmt.Errorf("Authorization failed")
 	}
 	defer clear(data)
 
