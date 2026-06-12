@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -36,7 +37,8 @@ cmds.Register("orbit", c.HandleOrbitCmds, "Manage your orbit. Subcommands: add, 
 
 	// parse cmd line arguments
 	if len(os.Args) < 2 {
-		log.Fatalln("Command error: Too few arguments.  Usage: ufos <command> [args...]")
+		fmt.Println("Too few arguments - calling 'help' command:")
+		os.Args = append(os.Args, "help")
 	}
 	cmdName := strings.ToLower(os.Args[1])
 	cmdArgs := os.Args[2:]

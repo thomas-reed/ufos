@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"text/tabwriter"
 
 	"github.com/thomas-reed/ufos/internal/api"
@@ -213,8 +214,13 @@ func (c *Commands) PrintHelp(cmd Command) error {
 	fmt.Println("(U)nidentifiable (F)ile/(O)bject (s)tore is a zero-trust, decentralized, and sharable filesystem designed for sovereign data ownership. It allows users to store, share, and navigate UFOs across a network of private servers without the hosts ever seeing the filenames, directory structures, or file contents.")
 	fmt.Println()
 	fmt.Println("COMMANDS:")
-	for name, cmd := range c.Registry {
-		fmt.Fprintf(w, "%s\t%s\n", name, cmd.Help)
+	keys := make([]string, 0, len(c.Registry))
+	for k := range c.Registry {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		fmt.Fprintf(w, "%s\t%s\n", key, c.Registry[key].Help)
 	}
 	
 	return w.Flush()
